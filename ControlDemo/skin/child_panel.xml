@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- ChildLayout 引用的子面板：演示 XML 嵌入 -->
+<HorizontalLayout height="54" childpadding="8" bkcolor="0xFFEDF7EE" bordercolor="0xFFBFE3C4" bordersize="1" inset="12,8,12,8">
+  <Label text="✅" width="30" font="0"/>
+  <VerticalLayout childpadding="2">
+    <Label text="这一块是 ChildLayout 控件" font="0" textcolor="0xFF1B8F4F" height="22"/>
+    <Label text="它来自独立文件 child_panel.xml —— ChildLayout 会把外部 XML 解析为独立控件树并嵌入当前布局" font="2" textcolor="0xFF5C9E68" height="20"/>
+  </VerticalLayout>
+</HorizontalLayout>

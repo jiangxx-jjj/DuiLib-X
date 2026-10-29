@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: 微软雅黑; font-size: 14px; color: #333333; background-color: #F5F7FA; margin: 0; }
+.header { background-color: #2D5BD7; color: #FFFFFF; padding: 12px 16px; }
+.header h2 { color: #FFFFFF; margin: 0; }
+.card { background-color: #FFFFFF; border: 1px solid #DDE3EC; margin: 10px; padding: 12px; }
+.card h3 { color: #2D5BD7; margin-top: 0; }
+.form-row { margin: 6px 0; }
+input.text { border: 1px solid #C8CFDA; }
+a { color: #1E6FFF; text-decoration: underline; }
+.footer { color: #8A94A6; font-size: 12px; margin: 10px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h2>HTML 界面演示（litehtml + DuiLib 原生渲染）</h2>
+</div>
+
+<div class="card">
+  <h3>富文本</h3>
+  <p>这段文字包含 <b>加粗</b>、<i>斜体</i>、<u>下划线</u> 和 <font color="#E64C4C">红色文字</font>。</p>
+  <p>支持 <a href="https://github.com/jiangxx-jjj/DuiLib-X">超链接点击</a>，点击后 C++ 收到通知。</p>
+</div>
+
+<div class="card">
+  <h3>表单控件（原生输入框叠加）</h3>
+  <div class="form-row"><label>用户名：</label><input type="text" name="user" value="张三"/></div>
+  <div class="form-row"><label>密码：</label><input type="password" name="pwd" value="123456"/></div>
+  <div class="form-row">
+    <label>城市：</label>
+    <select name="city"><option>北京</option><option selected>上海</option><option>广州</option></select>
+  </div>
+  <div class="form-row">
+    <input type="checkbox" name="remember" checked/> 记住我
+    <input type="radio" name="sex" value="male" checked/> 男
+    <input type="radio" name="sex" value="female"/> 女
+  </div>
+  <div class="form-row">
+    <button onclick="submit_form">提交表单</button>
+    <button onclick="clear_form">清空</button>
+  </div>
+</div>
+
+<div class="card">
+  <h3>列表</h3>
+  <ul>
+    <li>CSS 选择器（.class / #id）</li>
+    <li>盒模型 margin / padding / border</li>
+    <li>级联与继承</li>
+  </ul>
+</div>
+
+<p class="footer">DuiLib-X · litehtml v0.9 · 无浏览器内核依赖</p>
+</body>
+</html>

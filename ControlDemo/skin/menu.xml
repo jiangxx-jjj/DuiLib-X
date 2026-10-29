@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- 右键菜单：CMenuWnd::CreateMenu 加载 -->
+<Menu width="180" bkcolor="0xFFFFFFFF" bordercolor="0xFFD8DCE3" bordersize="1">
+  <MenuElement name="menu_open"   text="打开(&amp;O)"       height="30" font="0" iconsize="0,0"/>
+  <MenuElement name="menu_rename" text="重命名(&amp;M)"     height="30" font="0"/>
+  <MenuElement name="menu_sep1"   height="6" linetype="true"/>
+  <MenuElement name="menu_check1" text="显示隐藏项" height="30" font="0" checkitem="true" ischeck="false"/>
+  <MenuElement name="menu_check2" text="自动刷新"   height="30" font="0" checkitem="true" ischeck="true"/>
+  <MenuElement name="menu_sep2"   height="6" linetype="true"/>
+  <MenuElement name="menu_del"    text="删除(&amp;D)"       height="30" font="0" textcolor="0xFFC43838"/>
+  <MenuElement name="menu_exit"   text="退出(&amp;X)"       height="30" font="0" textcolor="0xFFC43838"/>
+  <MenuElement name="menu_sub"    text="子菜单(&amp;S)"     height="30" font="0">
+    <MenuElement name="menu_sub1" text="子项 A" height="28" font="0"/>
+    <MenuElement name="menu_sub2" text="子项 B" height="28" font="0"/>
+  </MenuElement>
+</Menu>

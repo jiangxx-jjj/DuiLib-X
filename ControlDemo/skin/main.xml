@@ -1,0 +1,173 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Window size="1180,760" mininfo="960,640" sizebox="4,4,6,6" caption="0,0,0,32" roundcorner="16,16"
+        disabledfontcolor="0xFFA7A6AA" defaultfontcolor="0xFF333333" linkfontcolor="0xFF1E6FFF"
+        linkhoverfontcolor="0xFFD3215F" selectedcolor="0xFFBAE4FF">
+  <Font id="0" name="微软雅黑" size="14" bold="false"/>
+  <Font id="1" name="微软雅黑" size="15" bold="true"/>
+  <Font id="2" name="微软雅黑" size="12" bold="false"/>
+  <Default name="Button" value="font=&quot;0&quot; textcolor=&quot;0xFF333333&quot; hottextcolor=&quot;0xFFFFFFFF&quot; pushedtextcolor=&quot;0xFFFFFFFF&quot; hotbkcolor=&quot;0xFF3A7AFF&quot; pushedbkcolor=&quot;0xFF2A62D9&quot; bordersize=&quot;1&quot; bordercolor=&quot;0xFFD8DCE3&quot;"/>
+  <VerticalLayout bkcolor="0xFFF3F5F9">
+    <HorizontalLayout height="32" bkcolor="0xFF2D5BD7">
+      <VerticalLayout inset="10,0,0,0">
+        <Label text="DuiLib-X Demo（控件全家桶 + HTML界面）" font="1" textcolor="0xFFFFFFFF" align="left" vcenter="true"/>
+      </VerticalLayout>
+      <Button name="btnMin" text="—" width="44" bordersize="0" hotbkcolor="0xFF4A76E0" pushedbkcolor="0xFF244CBB" textcolor="0xFFFFFFFF"/>
+      <Button name="btnClose" text="✕" width="44" bordersize="0" hotbkcolor="0xFFE64C4C" pushedbkcolor="0xFFC43838" textcolor="0xFFFFFFFF"/>
+    </HorizontalLayout>
+    <HorizontalLayout inset="12,12,12,12" childpadding="10">
+      <VerticalLayout width="200" bkcolor="0xFFFFFFFF" bordercolor="0xFFE2E6ED" bordersize="1" inset="8,10,8,10" childpadding="6">
+        <Label text="— 控件导航 —" font="2" textcolor="0xFF8A94A6" height="26" align="center"/>
+        <Button text="基础控件"   bindtablayoutname="tabMain" bindtabindex="0" height="34"/>
+        <Button text="输入控件"   bindtablayoutname="tabMain" bindtabindex="1" height="34"/>
+        <Button text="列表与树"   bindtablayoutname="tabMain" bindtabindex="2" height="34"/>
+        <Button text="布局容器"   bindtablayoutname="tabMain" bindtabindex="3" height="34"/>
+        <Button text="动效与多媒体" bindtablayoutname="tabMain" bindtabindex="4" height="34"/>
+        <Button text="窗口与嵌入" bindtablayoutname="tabMain" bindtabindex="5" height="34"/>
+        <Button text="HTML界面"   bindtablayoutname="tabMain" bindtabindex="6" height="34"/>
+      </VerticalLayout>
+      <TabLayout name="tabMain" bkcolor="0xFFFFFFFF" bordercolor="0xFFE2E6ED" bordersize="1" inset="14,14,14,14" selected="0">
+        <VerticalLayout childpadding="10">
+          <Label text="① Label / Text / Button / Option" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <HorizontalLayout height="36" childpadding="8">
+            <Button text="普通按钮" width="120"/>
+            <Button text="禁用" width="100" enabled="false"/>
+            <Option text="单选A" group="g1" width="90" selected="true"/>
+            <Option text="单选B" group="g1" width="90"/>
+            <CheckBox text="复选" width="100"/>
+          </HorizontalLayout>
+          <Label text="② Progress / Slider" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <Progress name="progressDemo" value="60" height="14" forecolor="0xFF3A7AFF" bkcolor="0xFFE2E8F4"/>
+          <Slider name="sliderDemo" value="60" min="0" max="100" height="24"/>
+          <Label text="③ GroupBox" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <GroupBox text="分组" height="70" inset="14,4,14,10" bordercolor="0xFFD8DCE3" bordersize="1">
+            <Label text="GroupBox 内容" align="center" vcenter="true"/>
+          </GroupBox>
+        </VerticalLayout>
+        <VerticalLayout childpadding="10">
+          <Label text="① Edit（tipvalue/password/numberonly）" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <VerticalLayout childpadding="8" height="120">
+            <HorizontalLayout height="28" childpadding="8">
+              <Label text="用户名：" width="80"/>
+              <Edit name="editUser" tipvalue="请输入用户名" width="260" height="28" bordersize="1" bordercolor="0xFFD8DCE3" textpadding="6,2,6,2"/>
+            </HorizontalLayout>
+            <HorizontalLayout height="28" childpadding="8">
+              <Label text="密码：" width="80"/>
+              <Edit name="editPwd" password="true" width="260" height="28" bordersize="1" bordercolor="0xFFD8DCE3" textpadding="6,2,6,2"/>
+            </HorizontalLayout>
+            <HorizontalLayout height="28" childpadding="8">
+              <Label text="年龄：" width="80"/>
+              <Edit name="editAge" numberonly="true" text="18" width="120" height="28" bordersize="1" bordercolor="0xFFD8DCE3" textpadding="6,2,6,2"/>
+              <Button name="btnSubmit" text="提交" width="120" height="28" bordersize="0"/>
+            </HorizontalLayout>
+          </VerticalLayout>
+          <Label text="② RichEdit" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <RichEdit name="richDemo" height="90" vscrollbar="true" multiline="true" wantreturn="true" tipvalue="多行输入…" textpadding="6,4,6,4" bordersize="1" bordercolor="0xFFD8DCE3"/>
+          <Label text="③ Combo / HotKey / DateTime / IPAddress" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <HorizontalLayout height="30" childpadding="8">
+            <Combo name="comboCity" width="180" height="28" itemfont="0">
+              <ListLabelElementUI text="北京" selected="true"/>
+              <ListLabelElementUI text="上海"/>
+              <ListLabelElementUI text="广州"/>
+            </Combo>
+            <HotKey name="hk" width="140" height="28" nativebkcolor="0xFFFFFFFF"/>
+            <DateTime name="dt" width="160" height="30" nativebkcolor="0xFFFFFFFF"/>
+            <IPAddress name="ip" width="150" height="30" nativebkcolor="0xFFFFFFFF"/>
+          </HorizontalLayout>
+        </VerticalLayout>
+        <VerticalLayout childpadding="8">
+          <Label text="① List（多列 + 表头）" font="1" height="22" textcolor="0xFF2D5BD7"/>
+          <List name="listDemo" vscrollbar="true" header="true" itemfont="0" itemtextcolor="0xFF333333" itemselectedbkcolor="0xFFE3EEFF" itemhotbkcolor="0xFFF0F6FF" bordersize="1" bordercolor="0xFFE2E6ED" height="150">
+            <ListHeader height="30">
+              <ListHeaderItem text="姓名" width="140" dragable="true" sepwidth="4"/>
+              <ListHeaderItem text="部门" width="160" dragable="true" sepwidth="4"/>
+              <ListHeaderItem text="城市" dragable="true" sepwidth="4"/>
+            </ListHeader>
+          </List>
+          <Label text="② TreeView" font="1" height="22" textcolor="0xFF2D5BD7"/>
+          <TreeView name="treeDemo" vscrollbar="true" itemfont="0" visiblefolderbtn="true" height="150" bordersize="1" bordercolor="0xFFE2E6ED" bkcolor="0xFFFBFCFE">
+            <TreeNode text="DuiLib-X" expland="true" height="26" textcolor="0xFF333333">
+              <TreeNode text="Core" height="24" textcolor="0xFF666666"/>
+              <TreeNode text="Control" height="24" textcolor="0xFF666666"/>
+              <TreeNode text="Utils" height="24" textcolor="0xFF666666"/>
+            </TreeNode>
+          </TreeView>
+        </VerticalLayout>
+        <VerticalLayout childpadding="10">
+          <Label text="① 布局容器" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <HorizontalLayout height="80" childpadding="8">
+            <VerticalLayout bkcolor="0xFFEAF1FF" inset="8,8,8,8" width="200">
+              <Label text="纵向布局" font="2" textcolor="0xFF2D5BD7" align="center"/>
+            </VerticalLayout>
+            <VerticalLayout bkcolor="0xFFF0FFF4" inset="8,8,8,8">
+              <Label text="横向布局" font="2" textcolor="0xFF1B8F4F" align="center"/>
+            </VerticalLayout>
+          </HorizontalLayout>
+          <Label text="② TileLayout / TabLayout / AnimationTab" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <TileLayout columns="4" itemsize="0,50" height="110" childpadding="6" bkcolor="0xFFF7F9FC" bordersize="1" bordercolor="0xFFE2E6ED" inset="8,8,8,8">
+            <Label text="1" bkcolor="0xFFE3EEFF" align="center" vcenter="true"/>
+            <Label text="2" bkcolor="0xFFE3EEFF" align="center" vcenter="true"/>
+            <Label text="3" bkcolor="0xFFE3EEFF" align="center" vcenter="true"/>
+            <Label text="4" bkcolor="0xFFE3EEFF" align="center" vcenter="true"/>
+          </TileLayout>
+          <HorizontalLayout height="60" childpadding="8" inset="0,8,0,0">
+            <TabLayout name="tabMini" selected="0" bkcolor="0xFFF7F9FC" bordercolor="0xFFE2E6ED" bordersize="1">
+              <VerticalLayout bkcolor="0xFFEAF1FF" inset="10,6,10,6"><Label text="Tab 1" font="2" textcolor="0xFF2D5BD7"/></VerticalLayout>
+              <VerticalLayout bkcolor="0xFFF0FFF4" inset="10,6,10,6"><Label text="Tab 2" font="2" textcolor="0xFF1B8F4F"/></VerticalLayout>
+            </TabLayout>
+            <VerticalLayout width="150" childpadding="6">
+              <Button name="btnTabPrev" text="◀ 上一页" height="24" bordersize="0"/>
+              <Button name="btnTabNext" text="下一页 ▶" height="24" bordersize="0"/>
+            </VerticalLayout>
+          </HorizontalLayout>
+          <ChildLayout xmlfile="child_panel.xml" height="54" childpadding="0"/>
+        </VerticalLayout>
+        <VerticalLayout childpadding="10">
+          <Label text="① GifAnim / Loading / RollText" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <HorizontalLayout height="90" childpadding="16" bkcolor="0xFFF7F9FC" bordercolor="0xFFE2E6ED" bordersize="1">
+            <GifAnim bkimage="anim/loading.gif" width="80" height="80" autoplay="true" bkcolor="0xFFFFFFFF" bordercolor="0xFFE2E6ED" bordersize="1"/>
+            <Loading width="48" height="48" time="120" spoke="8" thickness="4" outradius="18" innerradius="10" color="0xFF3A7AFF"/>
+            <VerticalLayout childpadding="6">
+              <HorizontalLayout height="28" childpadding="8">
+                <Button name="btnRollStart" text="滚动开始" width="90" height="26" bordersize="0"/>
+                <Button name="btnRollStop" text="滚动停止" width="90" height="26" bordersize="0"/>
+              </HorizontalLayout>
+            </VerticalLayout>
+          </HorizontalLayout>
+          <Label text="② RollText 公告栏" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <HorizontalLayout height="34" childpadding="8" bkcolor="0xFFFFF7E8" bordercolor="0xFFF5D89A" bordersize="1">
+            <RollText name="rollNotice" text="DuiLib-X：litehtml 无内核渲染 HTML 界面…" font="0" textcolor="0xFFB26A00" align="left"/>
+          </HorizontalLayout>
+          <Label text="③ WebBrowser（IE/WebView2 内核，与 HtmlBox 互补）" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <WebBrowser name="webDemo" homepage="https://www.baidu.com" autonavi="true" height="150"/>
+        </VerticalLayout>
+        <VerticalLayout childpadding="10">
+          <Label text="① 窗口属性运行时切换" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <HorizontalLayout height="34" childpadding="10">
+            <Button name="btnRound"  text="切换圆角" width="150"/>
+            <Button name="btnShadow" text="切换阴影" width="150"/>
+            <Button name="btnDpi"    text="DPI 100%↔125%" width="180"/>
+            <Button name="btnHSL"    text="HSL 换色" width="150"/>
+          </HorizontalLayout>
+          <Label text="② Menu 右键菜单（红色区域右键）" font="1" height="24" textcolor="0xFF2D5BD7"/>
+          <VerticalLayout name="menuArea" bkcolor="0xFFFFF0F0" bordercolor="0xFFF0B8B8" bordersize="1" height="110" inset="10,8,10,8">
+            <Label text="在此区域点击鼠标右键 → 弹出 CMenuWnd 菜单" textcolor="0xFFC43838" font="0" align="center" vcenter="true"/>
+          </VerticalLayout>
+        </VerticalLayout>
+        <VerticalLayout childpadding="8">
+          <VerticalLayout height="30">
+            <Label text="HTML 界面（litehtml 排版 + DuiLib 原生渲染，无浏览器内核）" font="1" textcolor="0xFF2D5BD7"/>
+          </VerticalLayout>
+          <HtmlBox name="htmlBox" html="html_demo.html" vscrollbar="true"/>
+          <HorizontalLayout height="30" childpadding="8">
+            <Button name="btnHtmlReload" text="重新加载" width="100"/>
+            <Button name="btnHtmlRead"  text="读取表单值" width="100"/>
+            <Label name="lblHtmlStatus" text="" textcolor="0xFF28C76F" align="left" vcenter="true"/>
+          </HorizontalLayout>
+        </VerticalLayout>
+      </TabLayout>
+    </HorizontalLayout>
+    <HorizontalLayout height="26" bkcolor="0xFFE9EDF4" inset="12,0,12,0">
+      <Label name="lblStatus" text="就绪。" font="2" textcolor="0xFF8A94A6" align="left" vcenter="true"/>
+    </HorizontalLayout>
+  </VerticalLayout>
+</Window>
