@@ -2,17 +2,17 @@
 #define __UIHTMLBOX_H__
 
 // ==========================================================================
-// CHtmlBoxUI — HTML/CSS 渲染控件
+//  CHtmlBoxUI — HTML/CSS 渲染控件
 //
-// 用 HTML 描述界面，litehtml 排版，DuiLib 原生渲染。
-// 支持滚动、链接点击回调、CSS 选择器/级联/盒模型。
+//  用 HTML 描述界面，自研引擎排版与绘制，DuiLib 原生控件体系承载。
+//  完全不依赖浏览器内核或第三方排版库。
 //
-// XML 用法：<HtmlBox html="page.html" or SetHtml(...) />
+//  XML 用法：<HtmlBox html="page.html" />
+//  代码用法：pBox->SetHtml(LR"(<div>...</div>)");
 // ==========================================================================
 
 #include "../Layout/UIVerticalLayout.h"
-#include "UIDuiHtmlContainer.h"
-#include "UIDuiHtmlForm.h"
+#include "HtmlEngine/HtmlDocument.h"
 
 namespace DuiLib
 {
@@ -31,7 +31,7 @@ public:
     // ---- 内容加载 ----
     bool SetHtml(LPCTSTR html);                 // 直接设置 HTML 字符串
     bool SetHtmlFromFile(LPCTSTR file);         // 从文件加载（相对 ResourcePath）
-    void SetCss(LPCTSTR css);                   // 设置全局样式表
+    void SetCss(LPCTSTR css);                   // 追加全局样式表
     LPCTSTR GetHtml(void) const { return m_sHtml.GetData(); }
 
     // ---- 基础路径（图片/css 相对路径基准）----
@@ -39,17 +39,13 @@ public:
 
     // ---- 表单数据交互（按 HTML name 属性）----
     CDuiString GetValue(LPCTSTR name);              // 读 input/select/textarea 的值
-    void SetValue(LPCTSTR name, LPCTSTR value);     // 写值（同步到控件）
+    void SetValue(LPCTSTR name, LPCTSTR value);     // 写值
     bool IsChecked(LPCTSTR name);                   // radio/checkbox 选中状态
     void SetChecked(LPCTSTR name, bool bChecked);
+    int  GetSelectedIndex(LPCTSTR name);            // select 选中项
+    void SetSelectedIndex(LPCTSTR name, int idx);
 
 protected:
-    static CControlUI* FindChildByName(CControlUI* pParent, LPCTSTR name);
-
-    // UTF-8 与 TSTR 转换辅助
-    static char*    DuiHtmlWToUtf8(LPCTSTR wstr);
-    static wchar_t* DuiHtmlUtf8ToW(const std::string& s);
-
     // ---- CVerticalLayoutUI 覆盖 ----
     void SetPos(RECT rc, bool bNeedInvalidate = true) override;
     bool DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl) override;
@@ -65,11 +61,12 @@ protected:
     void UpdateScrollRange(void);               // 更新滚动条范围
 
 protected:
-    CDuiHtmlContainer m_container;
+    HtmlEngine::HtmlDocument m_doc;
     CDuiString m_sHtml;
     CDuiString m_sCss;
-    int  m_iDocHeight;
-    bool m_bDocDirty;            // HTML 待（重新）排版标记
+    CDuiString m_sNotifyName;      // 通知消息的 wParam 载体（保证生命周期）
+    float m_fDocHeight;
+    bool  m_bDocDirty;            // HTML 待（重新）排版标记
 };
 
 } // namespace DuiLib

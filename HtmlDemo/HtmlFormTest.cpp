@@ -1,25 +1,26 @@
-﻿// ==========================================================================
-//  HtmlFormTest.cpp — 表单链路无窗口自测
+// ==========================================================================
+//  HtmlFormTest.cpp — 自研 HTML 引擎无窗口自测
 //
-// 目的：不依赖 GUI 交互，直接验证 CDuiHtmlContainer 的表单能力：
-//   1. 文档创建与排版
-//   2. 按 name 查找控件
-//   3. 读取初始值（value / selected / checked）
-//   4. 写入值、切换勾选
-//   5. 键盘输入（InsertChar / Backspace）
+//  不依赖 GUI，直接验证 HtmlEngine::HtmlDocument 的完整链路：
+//    1. HTML 解析 + CSS 级联 + 布局
+//    2. 按 name 查找表单控件
+//    3. 读取初始值（value / selected / checked）
+//    4. 写入值、切换勾选、切换下拉项
+//    5. 键盘输入（中英文、退格按字符处理）
+//    6. 命中测试（点击坐标 → 节点）
 //
-// 结果写到 stdout 与 form_test.log。
+//  结果输出到 stdout 与 form_test.log。
 // ==========================================================================
 
 #include "StdAfx.h"
 #include "UIlib.h"
-#include "../DuiLib/Control/UIDuiHtmlContainer.h"
-#include "../DuiLib/Control/UIDuiHtmlForm.h"
+#include "../DuiLib/Control/HtmlEngine/HtmlDocument.h"
 
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(lib, "GdiPlus.lib")
+#pragma comment(lib, "msimg32.lib")
 
-using namespace DuiLib;
+using namespace HtmlEngine;
 
 static int g_pass = 0;
 static int g_fail = 0;
@@ -32,15 +33,9 @@ static void Check(bool cond, const char* what)
     if (g_log) fprintf(g_log, "%s %s\n", cond ? "[PASS]" : "[FAIL]", what);
 }
 
-// UTF-8 → 宽字符（输出用）
-static std::wstring ToW(const std::string& s)
+static std::string WToUtf8(const std::wstring& w)
 {
-    std::wstring w;
-    if (s.empty()) return w;
-    int n = ::MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), NULL, 0);
-    w.resize(n);
-    ::MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), &w[0], n);
-    return w;
+    return WideToUtf8(w);
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -48,105 +43,138 @@ int _tmain(int argc, _TCHAR* argv[])
     ::CoInitialize(NULL);
     g_log = fopen("form_test.log", "w");
 
-    static LPCTSTR HTML =
-        _T("<html><body style='margin:0;font-family:微软雅黑;font-size:14px;color:#333'>")
-        _T("<div style='background-color:#FFFFFF;border:1px solid #D9E0EA;padding:14px'>")
-        _T("<input type='text' name='user' value='张三'/>")
-        _T("<input type='password' name='pwd' value='123456'/>")
-        _T("<select name='city'><option>北京</option><option selected>上海</option><option>深圳</option></select>")
-        _T("<input type='checkbox' name='remember' checked/>")
-        _T("<button name='do_login'>登 录</button>")
-        _T("</div></body></html>");
+    static const char* HTML =
+        "<!DOCTYPE html><html><head><style>"
+        "body { font-family: 微软雅黑; font-size: 14px; color: #333; margin: 0; }"
+        ".card { background: #FFF; border: 1px solid #D9E0EA; border-radius: 10px;"
+        "        box-shadow: 0 2px 10px rgba(45,91,215,0.08); padding: 16px; }"
+        "input[type=text], input[type=password] { width: 200px; height: 28px; }"
+        "</style></head><body>"
+        "<div class='card'>"
+        "<input type='text' name='user' value='张三'/>"
+        "<input type='password' name='pwd' value='123456'/>"
+        "<select name='city'>"
+        "  <option>北京</option><option selected>上海</option><option>深圳</option>"
+        "</select>"
+        "<input type='checkbox' name='remember' checked/>"
+        "<button name='do_login'>登 录</button>"
+        "</div></body></html>";
 
-    CDuiHtmlContainer container;
+    HtmlDocument doc;
 
-    // ---- 1. 创建文档 ----
-    bool ok = container.CreateDocument(HTML, NULL);
-    Check(ok, "CreateDocument 返回 true");
+    // ---- 1. 加载 + 排版 ----
+    bool ok = doc.LoadFromString(HTML);
+    Check(ok, "LoadFromString 返回 true");
 
-    // ---- 2. 排版 ----
-    int docH = container.Render(760);
-    Check(docH > 0, "Render 返回正高度");
-    printf("      文档尺寸: w=%d h=%d\n", container.GetDocumentWidth(), docH);
-    if (g_log) fprintf(g_log, "doc w=%d h=%d\n", container.GetDocumentWidth(), docH);
+    float docH = doc.Relayout(760.0f);
+    Check(docH > 0.0f, "Relayout 返回正高度");
+    printf("      文档尺寸: w=%.0f h=%.0f\n", doc.GetWidth(), docH);
+    if (g_log) fprintf(g_log, "doc w=%.0f h=%.0f\n", doc.GetWidth(), docH);
 
-    // ---- 3. 按 name 查找 ----
-    CHtmlFormElement* pUser = container.FindFormElement(_T("user"));
-    CHtmlFormElement* pPwd  = container.FindFormElement(_T("pwd"));
-    CHtmlFormElement* pCity = container.FindFormElement(_T("city"));
-    CHtmlFormElement* pRem  = container.FindFormElement(_T("remember"));
-    CHtmlFormElement* pBtn  = container.FindFormElement(_T("do_login"));
+    // ---- 2. 按 name 查找 ----
+    Node* pUser = doc.FindFormByName("user");
+    Node* pPwd  = doc.FindFormByName("pwd");
+    Node* pCity = doc.FindFormByName("city");
+    Node* pRem  = doc.FindFormByName("remember");
+    Node* pBtn  = doc.FindFormByName("do_login");
     Check(pUser != NULL, "找到 name=user");
     Check(pPwd  != NULL, "找到 name=pwd");
     Check(pCity != NULL, "找到 name=city");
     Check(pRem  != NULL, "找到 name=remember");
     Check(pBtn  != NULL, "找到 name=do_login");
-    Check(container.FindFormElement(_T("nope")) == NULL, "不存在的 name 返回 NULL");
+    Check(doc.FindFormByName("nope") == NULL, "不存在的 name 返回 NULL");
 
-    // ---- 4. 读初始值 ----
+    // ---- 3. 读初始值 ----
     if (pUser) {
-        std::wstring w = ToW(pUser->GetFormValue());
-        printf("      user 值 = %ws\n", w.c_str());
-        Check(pUser->GetFormValue() == "\xE5\xBC\xA0\xE4\xB8\x89", "user 初始值为 张三（UTF-8 正确）");
+        std::string v = doc.GetFormValue(pUser);
+        printf("      user 值 = %s\n", v.c_str());
+        Check(v == "\xE5\xBC\xA0\xE4\xB8\x89", "user 初始值为 张三（UTF-8 正确）");
     }
     if (pPwd) {
-        Check(pPwd->GetFormValue() == "123456", "pwd 初始值为 123456");
-        Check(pPwd->GetFormType() == HtmlFormPassword, "pwd 是密码框类型");
+        Check(doc.GetFormValue(pPwd) == "123456", "pwd 初始值为 123456");
     }
     if (pCity) {
-        std::wstring w = ToW(pCity->GetFormValue());
-        printf("      city 值 = %ws (index=%d, 选项数=%d)\n",
-               w.c_str(), pCity->GetSelectedIndex(), (int)pCity->GetOptions().size());
-        Check(pCity->GetSelectedIndex() == 1, "city 默认选中第 2 项（上海）");
-        Check(pCity->GetOptions().size() == 3, "city 有 3 个选项");
+        int idx = doc.GetFormSelectedIndex(pCity);
+        std::string v = doc.GetFormValue(pCity);
+        printf("      city 选中索引=%d 值=%s\n", idx, v.c_str());
+        Check(idx == 1, "city 默认选中第 2 项（上海）");
+        Check(v == "\xE4\xB8\x8A\xE6\xB5\xB7", "city 值为 上海（UTF-8 正确）");
     }
     if (pRem) {
-        Check(pRem->IsFormChecked(), "remember 初始为勾选");
-        Check(pRem->GetFormType() == HtmlFormCheckbox, "remember 是复选框类型");
-    }
-    if (pBtn) {
-        Check(pBtn->GetFormType() == HtmlFormButton, "do_login 是按钮类型");
+        Check(doc.GetFormChecked(pRem), "remember 初始为勾选");
     }
 
-    // ---- 5. 写值 ----
+    // ---- 4. 写值 ----
     if (pUser) {
-        pUser->SetFormValue("李四");
-        Check(pUser->GetFormValue() == "李四", "SetFormValue 生效");
+        doc.SetFormValue(pUser, "李四");
+        Check(doc.GetFormValue(pUser) == "李四", "SetFormValue 生效");
     }
     if (pCity) {
-        pCity->SetSelectedIndex(2);
-        Check(pCity->GetSelectedIndex() == 2, "SetSelectedIndex 生效");
-        Check(pCity->GetFormValue() == "\xE6\xB7\xB1\xE5\x9C\xB3", "city 值变为 深圳（UTF-8 正确）");
+        doc.SetFormSelectedIndex(pCity, 2);
+        Check(doc.GetFormSelectedIndex(pCity) == 2, "SetFormSelectedIndex 生效");
+        Check(doc.GetFormValue(pCity) == "\xE6\xB7\xB1\xE5\x9C\xB3", "city 值变为 深圳（UTF-8 正确）");
     }
     if (pRem) {
-        pRem->SetFormChecked(false);
-        Check(!pRem->IsFormChecked(), "SetFormChecked(false) 生效");
+        doc.SetFormChecked(pRem, false);
+        Check(!doc.GetFormChecked(pRem), "SetFormChecked(false) 生效");
     }
 
-    // ---- 6. 键盘输入 ----
+    // ---- 5. 键盘输入 ----
     if (pUser) {
-        pUser->SetFormValue("abc");
-        pUser->SetCaretPos(3);
-        pUser->InsertChar(L'd');
-        Check(pUser->GetFormValue() == "abcd", "InsertChar 追加字符");
-        pUser->Backspace();
-        Check(pUser->GetFormValue() == "abc", "Backspace 删除字符");
-        pUser->SetCaretPos(1);
-        pUser->DeleteChar();
-        Check(pUser->GetFormValue() == "ac", "DeleteChar 删除光标处字符");
+        doc.SetFormValue(pUser, "");
+        doc.SetFocusNode(pUser);
+
+        Check(doc.InputChar(L'a'), "InputChar('a') 返回 true");
+        Check(doc.InputChar(L'b'), "InputChar('b') 返回 true");
+        Check(doc.InputChar(L'c'), "InputChar('c') 返回 true");
+        Check(doc.GetFormValue(pUser) == "abc", "键盘输入 abc 正确");
+
+        Check(doc.InputKeyDown(VK_BACK), "InputKeyDown(VK_BACK) 返回 true");
+        Check(doc.GetFormValue(pUser) == "ab", "Backspace 删除一个字符");
+
+        // 中文输入
+        Check(doc.InputChar(L'中'), "输入中文 中");
+        Check(doc.InputChar(L'文'), "输入中文 文");
+        std::string v = doc.GetFormValue(pUser);
+        printf("      中文输入结果 = %s\n", v.c_str());
+        Check(v == "ab" "\xE4\xB8\xAD" "\xE6\x96\x87", "中文输入正确（ab中文）");
+
+        // 中文退格：按字符而非字节
+        doc.InputKeyDown(VK_BACK);
+        std::string v2 = doc.GetFormValue(pUser);
+        Check(v2 == "ab" "\xE4\xB8\xAD", "中文退格正确（ab中，按字符删除）");
     }
 
-    // ---- 7. 中文输入（UTF-8 多字节）----
+    // ---- 6. 命中测试 ----
     if (pUser) {
-        pUser->SetFormValue("");
-        pUser->SetCaretPos(0);
-        pUser->InsertChar(L'中');
-        pUser->InsertChar(L'文');
-        std::wstring w = ToW(pUser->GetFormValue());
-        printf("      中文输入结果 = %ws\n", w.c_str());
-        Check(w == L"中文", "中文输入正确");
-        pUser->Backspace();
-        Check(ToW(pUser->GetFormValue()) == L"中", "中文退格正确（按字符而非字节）");
+        // 取 user 输入框的中心点
+        float cx = pUser->x + pUser->width / 2.0f;
+        float cy = pUser->y + pUser->height / 2.0f;
+        Node* pHit = doc.HitTest(cx, cy);
+        Check(pHit != NULL, "命中测试返回非空节点");
+        if (pHit != NULL && g_log) {
+            fprintf(g_log, "hit at (%.0f,%.0f) -> tag=%s name=%s\n",
+                    cx, cy, pHit->tagName.c_str(), pHit->GetAttr("name").c_str());
+        }
+    }
+
+    // ---- 7. CSS3 解析验证 ----
+    if (doc.Loaded()) {
+        Node* pCard = NULL;
+        // 找 .card（第一个带 class=card 的 div）
+        // 通过遍历 body 的子节点
+        Node* body = doc.GetBodyNode();
+        if (body != NULL) {
+            for (size_t i = 0; i < body->children.size(); i++) {
+                Node* c = body->children[i];
+                if (c->IsElement() && c->GetAttr("class") == "card") { pCard = c; break; }
+            }
+        }
+        if (pCard != NULL) {
+            Check(pCard->style.borderRadius.tl > 0, "border-radius 解析生效");
+            Check(pCard->style.backgroundColor.IsVisible(), "background-color 解析生效");
+            Check(!pCard->style.boxShadows.empty(), "box-shadow 解析生效");
+        }
     }
 
     // ---- 汇总 ----

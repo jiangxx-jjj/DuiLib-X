@@ -1,40 +1,103 @@
 ﻿#include "StdAfx.h"
 #include "UIHtmlBox.h"
-#include <string>
+
+#pragma comment(lib, "msimg32.lib")
 
 namespace DuiLib
 {
 
 IMPLEMENT_DUICONTROL(CHtmlBoxUI)
 
+// ============================ 编码转换 ============================
+
+static std::string DuiWToUtf8(LPCTSTR wstr)
+{
+    if (wstr == NULL) return std::string();
+    int n = ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
+    if (n <= 0) return std::string();
+    std::string s(n - 1, 0);
+    ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, &s[0], n, NULL, NULL);
+    return s;
+}
+
+static CDuiString Utf8ToDuiW(const std::string& s)
+{
+    if (s.empty()) return _T("");
+    int n = ::MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), NULL, 0);
+    if (n <= 0) return _T("");
+    std::wstring w(n, 0);
+    ::MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), &w[0], n);
+    return CDuiString(w.c_str());
+}
+
+// ============================ 构造 ============================
+
 CHtmlBoxUI::CHtmlBoxUI(void)
-    : m_iDocHeight(0)
+    : m_fDocHeight(0.0f)
     , m_bDocDirty(false)
 {
-    m_container.SetLinkClickCallback([this](const CDuiString& href) {
+    // 链接点击 → 转发为 DuiLib 通知
+    m_doc.SetLinkClickCallback([this](const std::string& href) {
         if (m_pManager != NULL) {
-            m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLLINK, (WPARAM)href.GetData(), 0, true);
+            m_sNotifyName = Utf8ToDuiW(href);
+            m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLLINK,
+                                   (WPARAM)m_sNotifyName.GetData(), 0, true);
         }
     });
-    // 表单提交（<button> 或 <input type=submit> 点击）
-    m_container.SetFormSubmitCallback([this](CHtmlFormElement* pEl) {
+
+    // 按钮/可点击元素 → 转发
+    m_doc.SetFormSubmitCallback([this](const std::string& name) {
         if (m_pManager != NULL) {
-            wchar_t* w = DuiHtmlUtf8ToW(pEl->GetFormName());
-            CDuiString sName = w ? (LPCTSTR)w : _T("");
-            if (w) delete[] w;
-            m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLFORMSUBMIT, (WPARAM)sName.GetData(), 0, true);
+            // 注意：SendNotify 的 wParam 必须指向调用期间一直有效的内存，
+            // 因此把字符串存到成员变量里，避免局部变量析构后成为悬垂指针
+            m_sNotifyName = Utf8ToDuiW(name);
+            m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLFORMSUBMIT,
+                                   (WPARAM)m_sNotifyName.GetData(), 0, true);
         }
     });
-    // 表单数据变化（输入、勾选、下拉切换）
-    m_container.SetFormChangedCallback([this](CHtmlFormElement* pEl) {
+
+    // 表单值变化 → 转发
+    m_doc.SetFormChangedCallback([this](const std::string& name) {
         if (m_pManager != NULL) {
-            wchar_t* w = DuiHtmlUtf8ToW(pEl->GetFormName());
-            CDuiString sName = w ? (LPCTSTR)w : _T("");
-            if (w) delete[] w;
-            m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLCHANGED, (WPARAM)sName.GetData(), 0, true);
+            m_sNotifyName = Utf8ToDuiW(name);
+            m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLCHANGED,
+                                   (WPARAM)m_sNotifyName.GetData(), 0, true);
         }
         Invalidate();
     });
+
+    // 图片加载：复用 DuiLib 的渲染引擎
+    m_doc.SetImageCallbacks(
+        [](const std::string& src, float& w, float& h) -> bool {
+            std::wstring wSrc = HtmlEngine::Utf8ToWide(src);
+            TImageInfo* pInfo = (TImageInfo*)CRenderEngine::LoadImage(wSrc.c_str(), NULL, 0);
+            if (pInfo == NULL) {
+                pInfo = (TImageInfo*)CRenderEngine::GdiplusLoadImage(wSrc.c_str(), NULL, 0);
+            }
+            if (pInfo == NULL) { w = 0; h = 0; return false; }
+            w = (float)pInfo->nX;
+            h = (float)pInfo->nY;
+            // 缓存交给引擎（简化：不缓存，交给 DuiLib 内部缓存）
+            return true;
+        },
+        [](HDC hdc, const std::string& src, float x, float y, float w, float h) -> bool {
+            std::wstring wSrc = HtmlEngine::Utf8ToWide(src);
+            TImageInfo* pInfo = (TImageInfo*)CRenderEngine::LoadImage(wSrc.c_str(), NULL, 0);
+            if (pInfo == NULL) {
+                pInfo = (TImageInfo*)CRenderEngine::GdiplusLoadImage(wSrc.c_str(), NULL, 0);
+            }
+            if (pInfo == NULL || pInfo->hBitmap == NULL) return false;
+
+            HDC hMemDC = ::CreateCompatibleDC(hdc);
+            HBITMAP hOld = (HBITMAP)::SelectObject(hMemDC, pInfo->hBitmap);
+            ::SetStretchBltMode(hdc, HALFTONE);
+            ::SetBrushOrgEx(hdc, 0, 0, NULL);
+            ::StretchBlt(hdc, (int)x, (int)y, (int)w, (int)h,
+                         hMemDC, 0, 0, pInfo->nX, pInfo->nY, SRCCOPY);
+            ::SelectObject(hMemDC, hOld);
+            ::DeleteDC(hMemDC);
+            return true;
+        });
 }
 
 CHtmlBoxUI::~CHtmlBoxUI(void)
@@ -52,6 +115,8 @@ LPVOID CHtmlBoxUI::GetInterface(LPCTSTR pstrName)
     return CVerticalLayoutUI::GetInterface(pstrName);
 }
 
+// ============================ 内容加载 ============================
+
 bool CHtmlBoxUI::SetHtml(LPCTSTR html)
 {
     if (html == NULL) return false;
@@ -64,33 +129,26 @@ bool CHtmlBoxUI::SetHtml(LPCTSTR html)
 
 bool CHtmlBoxUI::SetHtmlFromFile(LPCTSTR file)
 {
+    if (file == NULL) return false;
+
     CDuiString sPath = CPaintManagerUI::GetResourcePath();
     sPath += file;
-    if (CPaintManagerUI::GetResourceZip().IsEmpty()) {
-        sPath = CPaintManagerUI::GetResourcePath() + file;
+
+    std::string utf8Path = DuiWToUtf8(sPath.GetData());
+    if (!m_doc.LoadFromFile(utf8Path, DuiWToUtf8(m_sCss.GetData()))) {
+        return false;
     }
-    HANDLE hFile = ::CreateFile(sPath.GetData(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hFile == INVALID_HANDLE_VALUE) return false;
-    DWORD dwSize = ::GetFileSize(hFile, NULL);
-    if (dwSize == 0 || dwSize == INVALID_FILE_SIZE) { ::CloseHandle(hFile); return false; }
-    BYTE* pBuf = new BYTE[dwSize + 1];
-    DWORD dwRead = 0;
-    ::ReadFile(hFile, pBuf, dwSize, &dwRead, NULL);
-    ::CloseHandle(hFile);
-    pBuf[dwRead] = 0;
-    bool ok = false;
-    if (dwRead >= 2 && pBuf[0] == 0xFF && pBuf[1] == 0xFE) {
-        ok = SetHtml((LPCTSTR)(pBuf + 2));
-    } else {
-        int wlen = MultiByteToWideChar(CP_UTF8, 0, (char*)pBuf, dwRead, NULL, 0);
-        wchar_t* wBuf = new wchar_t[wlen + 1];
-        MultiByteToWideChar(CP_UTF8, 0, (char*)pBuf, dwRead, wBuf, wlen);
-        wBuf[wlen] = 0;
-        ok = SetHtml((LPCTSTR)wBuf);
-        delete[] wBuf;
-    }
-    delete[] pBuf;
-    return ok;
+
+    // 记录路径（供后续重新加载）
+    m_sHtml = file;
+    m_bDocDirty = false;
+
+    int width = m_rcItem.right - m_rcItem.left;
+    if (width <= 0) width = 800;
+    m_fDocHeight = m_doc.Relayout((float)width);
+    UpdateScrollRange();
+    Invalidate();
+    return true;
 }
 
 void CHtmlBoxUI::SetCss(LPCTSTR css)
@@ -101,111 +159,95 @@ void CHtmlBoxUI::SetCss(LPCTSTR css)
 
 void CHtmlBoxUI::SetBasePath(LPCTSTR path)
 {
-    m_container.SetBasePath(path);
+    m_doc.SetBasePath(DuiWToUtf8(path));
 }
+
+// ============================ 表单读写 ============================
 
 CDuiString CHtmlBoxUI::GetValue(LPCTSTR name)
 {
-    // 从 litehtml 文档树里按 name 找表单控件
-    CHtmlFormElement* pForm = m_container.FindFormElement(name);
-    if (pForm == NULL) return _T("");
-
-    std::string val = pForm->GetFormValue();
-    wchar_t* w = DuiHtmlUtf8ToW(val);
-    CDuiString s = w ? (LPCTSTR)w : _T("");
-    if (w) delete[] w;
-    return s;
+    HtmlEngine::Node* pNode = m_doc.FindFormByName(DuiWToUtf8(name));
+    if (pNode == NULL) return _T("");
+    return Utf8ToDuiW(m_doc.GetFormValue(pNode));
 }
 
 void CHtmlBoxUI::SetValue(LPCTSTR name, LPCTSTR value)
 {
-    CHtmlFormElement* pForm = m_container.FindFormElement(name);
-    if (pForm == NULL) return;
-
-    char* pUtf8 = DuiHtmlWToUtf8(value);
-    if (pUtf8) {
-        pForm->SetFormValue(pUtf8);
-        delete[] pUtf8;
-    }
+    HtmlEngine::Node* pNode = m_doc.FindFormByName(DuiWToUtf8(name));
+    if (pNode == NULL) return;
+    m_doc.SetFormValue(pNode, DuiWToUtf8(value));
     Invalidate();
 }
 
 bool CHtmlBoxUI::IsChecked(LPCTSTR name)
 {
-    CHtmlFormElement* pForm = m_container.FindFormElement(name);
-    return pForm != NULL ? pForm->IsFormChecked() : false;
+    HtmlEngine::Node* pNode = m_doc.FindFormByName(DuiWToUtf8(name));
+    return pNode != NULL ? m_doc.GetFormChecked(pNode) : false;
 }
 
 void CHtmlBoxUI::SetChecked(LPCTSTR name, bool bChecked)
 {
-    CHtmlFormElement* pForm = m_container.FindFormElement(name);
-    if (pForm == NULL) return;
-    pForm->SetFormChecked(bChecked);
+    HtmlEngine::Node* pNode = m_doc.FindFormByName(DuiWToUtf8(name));
+    if (pNode == NULL) return;
+    m_doc.SetFormChecked(pNode, bChecked);
     Invalidate();
 }
 
-CControlUI* CHtmlBoxUI::FindChildByName(CControlUI* pParent, LPCTSTR name)
+int CHtmlBoxUI::GetSelectedIndex(LPCTSTR name)
 {
-    if (pParent == NULL) return NULL;
-    if (pParent->GetName() == name) return pParent;
-    IContainerUI* pContainer = static_cast<IContainerUI*>(pParent->GetInterface(_T("IContainer")));
-    if (pContainer == NULL) return NULL;
-    int n = pContainer->GetCount();
-    for (int i = 0; i < n; i++) {
-        CControlUI* pFound = FindChildByName(pContainer->GetItemAt(i), name);
-        if (pFound != NULL) return pFound;
-    }
-    return NULL;
+    HtmlEngine::Node* pNode = m_doc.FindFormByName(DuiWToUtf8(name));
+    return pNode != NULL ? m_doc.GetFormSelectedIndex(pNode) : -1;
 }
 
-// UTF-8 ↔ TSTR 转换辅助（表单数据交换用）
-char* CHtmlBoxUI::DuiHtmlWToUtf8(LPCTSTR wstr)
+void CHtmlBoxUI::SetSelectedIndex(LPCTSTR name, int idx)
 {
-    if (wstr == NULL) return NULL;
-    int n = ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-    if (n <= 0) return NULL;
-    char* p = new char[n];
-    ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, p, n, NULL, NULL);
-    return p;
+    HtmlEngine::Node* pNode = m_doc.FindFormByName(DuiWToUtf8(name));
+    if (pNode == NULL) return;
+    m_doc.SetFormSelectedIndex(pNode, idx);
+    Invalidate();
 }
 
-wchar_t* CHtmlBoxUI::DuiHtmlUtf8ToW(const std::string& s)
-{
-    if (s.empty()) return NULL;
-    int n = ::MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), NULL, 0);
-    if (n <= 0) return NULL;
-    wchar_t* p = new wchar_t[n + 1];
-    ::MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), p, n);
-    p[n] = 0;
-    return p;
-}
+// ============================ 排版 ============================
 
 void CHtmlBoxUI::EnsureDocument(void)
 {
     if (!m_bDocDirty || m_sHtml.IsEmpty()) return;
-    if (m_pManager == NULL) return;
 
-    m_container.SetBasePath(CPaintManagerUI::GetResourcePath());
-    int width = m_rcItem.right - m_rcItem.left;
-    if (width <= 0) width = 800;
+    std::string html = DuiWToUtf8(m_sHtml.GetData());
+    std::string css = DuiWToUtf8(m_sCss.GetData());
 
-    if (!m_container.CreateDocument(m_sHtml.GetData(), m_sCss.IsEmpty() ? NULL : m_sCss.GetData())) {
+    // 如果是文件名（不以 < 开头且文件存在），走文件加载
+    if (html.find('<') == std::string::npos && html.size() > 4) {
+        CDuiString sPath = CPaintManagerUI::GetResourcePath();
+        sPath += m_sHtml;
+        if (m_doc.LoadFromFile(DuiWToUtf8(sPath.GetData()), css)) {
+            int width = m_rcItem.right - m_rcItem.left;
+            if (width <= 0) width = 800;
+            m_fDocHeight = m_doc.Relayout((float)width);
+            UpdateScrollRange();
+            m_bDocDirty = false;
+            return;
+        }
+    }
+
+    if (!m_doc.LoadFromString(html, css)) {
         m_bDocDirty = false;
         return;
     }
-    m_iDocHeight = m_container.Render(width);
+
+    int width = m_rcItem.right - m_rcItem.left;
+    if (width <= 0) width = 800;
+    m_fDocHeight = m_doc.Relayout((float)width);
     UpdateScrollRange();
     m_bDocDirty = false;
 }
 
 void CHtmlBoxUI::Relayout(void)
 {
-    if (!m_sHtml.IsEmpty() && !m_bDocDirty) {
-        int width = m_rcItem.right - m_rcItem.left;
-        if (width > 0) {
-            m_iDocHeight = m_container.Render(width);
-            UpdateScrollRange();
-        }
+    int width = m_rcItem.right - m_rcItem.left;
+    if (width > 0 && m_doc.IsLoaded()) {
+        m_fDocHeight = m_doc.Relayout((float)width);
+        UpdateScrollRange();
     }
     Invalidate();
 }
@@ -213,7 +255,7 @@ void CHtmlBoxUI::Relayout(void)
 void CHtmlBoxUI::UpdateScrollRange(void)
 {
     int viewH = m_rcItem.bottom - m_rcItem.top;
-    int docH = m_iDocHeight;
+    int docH = (int)m_fDocHeight;
     if (docH > viewH) {
         EnableScrollBar(true, GetHorizontalScrollBar() != NULL);
         if (GetVerticalScrollBar()) {
@@ -235,44 +277,57 @@ void CHtmlBoxUI::SetPos(RECT rc, bool bNeedInvalidate)
     }
 }
 
+// ============================ 绘制 ============================
+
 bool CHtmlBoxUI::DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl)
 {
     EnsureDocument();
+
     // 白底填充，避免默认黑底
     RECT rcFill = m_rcItem;
     ::FillRect(hDC, &rcFill, (HBRUSH)::GetStockObject(WHITE_BRUSH));
-    CVerticalLayoutUI::DoPaint(hDC, rcPaint, pStopControl);
-    if (m_sHtml.IsEmpty()) return true;
-    RECT rcItem = m_rcItem;
-    // Draw 的 rcClient 必须是【控件客户区尺寸】(0,0,w,h)，
-    // 因为容器内部会对 DC 做 SetViewportOrgEx 平移，
-    // 若再传 m_rcItem 的绝对坐标就会造成二次偏移、内容画到窗口外。
-    RECT rcClient = { 0, 0, rcItem.right - rcItem.left, rcItem.bottom - rcItem.top };
-    m_container.Draw(hDC, GetScrollPos().cy, rcClient);
+
+    if (m_sHtml.IsEmpty() || !m_doc.IsLoaded()) {
+        CVerticalLayoutUI::DoPaint(hDC, rcPaint, pStopControl);
+        return true;
+    }
+
+    int w = m_rcItem.right - m_rcItem.left;
+    int h = m_rcItem.bottom - m_rcItem.top;
+
+    // 引擎绘制（GDI+ 内部处理滚动变换）
+    SIZE szScroll = GetScrollPos();
+    m_doc.Paint(hDC, (float)szScroll.cx, (float)szScroll.cy, (float)w, (float)h);
+
     return true;
 }
+
+// ============================ 事件 ============================
 
 void CHtmlBoxUI::DoEvent(TEventUI& event)
 {
     if (event.Type == UIEVENT_MOUSEMOVE) {
-        m_container.OnMouseMove(event.ptMouse);
+        float dx = (float)(event.ptMouse.x - m_rcItem.left);
+        float dy = (float)(event.ptMouse.y - m_rcItem.top);
+        if (m_doc.OnMouseMove(dx, dy)) Invalidate();
     }
-    else if (event.Type == UIEVENT_BUTTONDOWN) {
-        m_container.OnLeftButtonDown(event.ptMouse);
-        SetFocus();      // 让控件获得焦点，才能接收键盘输入
+    else if (event.Type == UIEVENT_MOUSELEAVE) {
+        m_doc.OnMouseLeave();
         Invalidate();
     }
-    else if (event.Type == UIEVENT_BUTTONUP) {
-        m_container.OnLeftButtonUp(event.ptMouse);
+    else if (event.Type == UIEVENT_BUTTONDOWN) {
+        float dx = (float)(event.ptMouse.x - m_rcItem.left);
+        float dy = (float)(event.ptMouse.y - m_rcItem.top);
+        SIZE szScroll = GetScrollPos();
+        m_doc.OnClick(dx + (float)szScroll.cx, dy + (float)szScroll.cy);
+        SetFocus();
         Invalidate();
     }
     else if (event.Type == UIEVENT_CHAR) {
-        // 键盘字符输入（表单文本框用）
-        if (m_container.InputChar(event.chKey)) Invalidate();
+        if (m_doc.InputChar(event.chKey)) Invalidate();
     }
     else if (event.Type == UIEVENT_KEYDOWN) {
-        // 退格 / 方向键等
-        if (m_container.InputKeyDown((int)event.wParam)) Invalidate();
+        if (m_doc.InputKeyDown((int)event.wParam)) Invalidate();
     }
     else if (event.Type == UIEVENT_SCROLLWHEEL) {
         int delta = ((int)event.wParam > 0) ? -60 : 60;
@@ -280,23 +335,23 @@ void CHtmlBoxUI::DoEvent(TEventUI& event)
         if (pVBar != NULL && pVBar->IsVisible()) {
             SIZE sz = GetScrollPos();
             int newY = sz.cy + delta;
-            int maxScroll = m_iDocHeight - (m_rcItem.bottom - m_rcItem.top);
+            int maxScroll = (int)m_fDocHeight - (m_rcItem.bottom - m_rcItem.top);
             if (maxScroll < 0) maxScroll = 0;
             if (newY < 0) newY = 0;
             if (newY > maxScroll) newY = maxScroll;
             SetScrollPos(CDuiSize(sz.cx, newY));
-            m_container.SetScrollOffset(newY);
             Invalidate();
             return;
         }
     }
+
     CVerticalLayoutUI::DoEvent(event);
 }
 
 SIZE CHtmlBoxUI::EstimateSize(SIZE szAvailable)
 {
     SIZE sz = CVerticalLayoutUI::EstimateSize(szAvailable);
-    if (!m_sHtml.IsEmpty() && m_iDocHeight > 0) sz.cy = m_iDocHeight;
+    if (!m_sHtml.IsEmpty() && m_fDocHeight > 0) sz.cy = (LONG)m_fDocHeight;
     return sz;
 }
 

@@ -1,4 +1,4 @@
-# DuiLib 使用文档
+﻿# DuiLib 使用文档
 
 > 基于 **DuiLib_Ultimate**（qdtroy 增强版）编写，配套示例工程 `ControlDemo/`，
 > 示例覆盖了 `Help/Duilib属性列表.html` 中的**全部控件**，可与本文档对照学习。
@@ -20,8 +20,23 @@
 11. [常见问题与调试技巧](#11常见问题与调试技巧)
 12. [工程实践建议](#12工程实践建议)
 13. [实战经验：崩溃案例分析](#13实战经验崩溃案例分析) ← 本仓库实战修复总结
-14. [附录 A：示例工程说明](#附录-a示例工程说明)
-15. [附录 B：XML 属性书写规范速记](#附录-bxml-属性书写规范速记)
+14. [HTML/CSS 界面渲染（HtmlBox 控件）](#14-htmlcss-界面渲染htmlbox-控件) ← 自研引擎，无浏览器内核
+    - [14.1 为什么自研](#141-为什么自研而不集成现成引擎)
+    - [14.2 引擎架构](#142-引擎架构)
+    - [14.3 最小示例](#143-最小示例)
+    - [14.4 HTML 内嵌格式](#144-html-内嵌格式推荐原始字符串)
+    - [14.5 支持的 HTML 标签](#145-支持的-html-标签)
+    - [14.6 支持的 CSS3 属性](#146-支持的-css3-属性)
+    - [14.7 支持的 CSS 选择器](#147-支持的-css-选择器)
+    - [14.8 表单控件](#148-表单控件)
+    - [14.9 数据双向交互](#149-数据双向交互)
+    - [14.10 完整示例：圆角窗口 + HTML 标题栏](#1410-完整示例圆角无边框窗口--html-自绘标题栏)
+    - [14.11 引擎 API 速查](#1411-引擎-api-速查)
+    - [14.12 实战坑](#1412-实战坑自研引擎版)
+    - [14.13 自测](#1413-自测)
+    - [14.14 性能与限制](#1414-性能与限制)
+15. [附录 A：示例工程说明](#附录-a示例工程说明)
+16. [附录 B：XML 属性书写规范速记](#附录-bxml-属性书写规范速记)
 
 ---
 
@@ -827,27 +842,52 @@ pFrame->Create(..., WS_EX_LAYERED | WS_EX_WINDOWEDGE);   // 窗口隐身！
 
 ## 14. HTML/CSS 界面渲染（HtmlBox 控件）
 
-> 本章是 DuiLib-X 的核心增强：**用 HTML/CSS 写界面，不依赖任何浏览器内核**。
-> 排版交给 [litehtml](https://github.com/litehtml/litehtml)（BSD-3，约 2 万行 C++），
-> 绘制与交互全部由 DuiLib 原生完成。
+> 本章是 DuiLib-X 的核心增强：**用 HTML/CSS 写界面，完全不依赖任何浏览器内核、也不依赖第三方排版库**。
+> 引擎是 DuiLib-X 自研的（约 6000 行 C++），从 HTML 解析、CSS 解析、布局计算到 GDI+ 绘制全部自己实现。
 
-### 14.1 原理：三层结构
+### 14.1 为什么自研而不集成现成引擎
+
+早期版本集成过 [litehtml](https://github.com/litehtml/litehtml)（一个 BSD-3 的排版引擎），
+但实践中暴露了几个问题：
+
+| 问题 | 说明 |
+|---|---|
+| 表单控件不实现 | litehtml 对 `input/select/button/textarea` 只给 `display:inline-block`，一个像素都不画，全靠宿主自己写 |
+| CSS3 支持缺失 | 不支持 `box-shadow`、`linear-gradient`、`opacity`、`filter`，这些现代界面必备 |
+| 圆角背景不生效 | `border-radius` 能解析但绘制回调里拿不到，需要自己反推 |
+| 调试成本高 | 排版结果不可控，出问题只能读 2 万行第三方源码 |
+
+自研后这些问题从根上解决：**要什么属性就实现什么属性**，行为完全可控。
+
+### 14.2 引擎架构
 
 ```
-你的 HTML 字符串
-      ↓
-litehtml 解析（内置 gumbo HTML5 解析器）+ CSS 级联 + 盒模型排版
-      ↓ 算出每个元素的 位置/尺寸/颜色/字体
-CDuiHtmlContainer（document_container 回调实现）
-      ↓ 把排版结果用 GDI 画到 DuiLib 的内存 DC
-CHtmlBoxUI（DuiLib 控件，可直接放进 XML 或程序化创建）
+DuiLib/Control/HtmlEngine/
+├── HtmlTypes.h/.cpp      基础类型：颜色/长度/枚举/阴影/渐变/边框
+├── HtmlDom.h/.cpp        DOM 节点树 + 计算样式（ComputedStyle）
+├── HtmlParser.h/.cpp     HTML5 容错解析器 + 实体解码
+├── HtmlCss.h/.cpp        CSS3 解析 + 选择器匹配 + 级联 + 默认样式表
+├── HtmlLayout.h/.cpp     布局引擎：Block / Inline / Flex / Table / 绝对定位
+├── HtmlPainter.h/.cpp    GDI+ 绘制：圆角/渐变/阴影/文字/表单控件
+└── HtmlDocument.h/.cpp   门面类：把上面五层串成完整流程
 ```
 
-litehtml 是**排版计算引擎，不是绘制引擎**——它只负责“算出每个盒子在哪、多大、什么颜色”，
-真正画像素要靠宿主实现 `document_container` 的 24 个虚函数。
-DuiLib-X 把这 24 个回调全部实现在 `DuiLib/Control/UIDuiHtmlContainer.cpp`。
+数据流：
 
-### 14.2 最小示例
+```
+HTML 字符串
+   ↓ HtmlParser::Parse          解析成 DOM 树
+   ↓ HtmlCss::ParseStylesheet   解析 <style> 和 CSS 字符串
+   ↓ HtmlCss::ApplyToTree       选择器匹配 + 级联 + 继承 → 每个节点一份 ComputedStyle
+   ↓ HtmlLayout::Layout         盒模型计算 → 每个节点的 x/y/width/height
+   ↓ HtmlPainter::Paint         GDI+ 绘制到目标 HDC
+屏幕像素
+```
+
+`CHtmlBoxUI`（`DuiLib/Control/UIHtmlBox.cpp`）是 DuiLib 控件外壳，
+内部持有 `HtmlEngine::HtmlDocument`，负责滚动条、事件转发、表单读写 API。
+
+### 14.3 最小示例
 
 ```cpp
 #include "UIlib.h"
@@ -858,58 +898,259 @@ pBox->SetName(_T("htmlBox"));
 pBox->SetBkColor(0xFFEEF2F7);          // 控件底色（必须设，否则露窗口黑底）
 pBox->SetManager(m_pm, NULL, true);
 m_pm->AttachDialog(pBox);              // 作为根控件
-pBox->SetHtml(PAGE_MAIN);              // 或 SetHtmlFromFile(_T("page.html"))
+pBox->SetHtml(LR"HTML(
+    <div style="padding:20px; background:#FFF; border-radius:10px;">
+        <h2 style="color:#2D5BD7;">Hello HTML</h2>
+        <p>这段界面由自研引擎渲染，没有浏览器内核。</p>
+    </div>
+)HTML");
 ```
 
 XML 写法：
 
 ```xml
 <HtmlBox name="htmlBox" bkcolor="0xFFEEF2F7" html="page.html" />
-<!-- 或直接内联：htmltext="&lt;div&gt;你好&lt;/div&gt;" -->
+<!-- 或内联：htmltext="&lt;div&gt;你好&lt;/div&gt;" -->
 ```
 
-### 14.3 表单控件：litehtml 不提供，DuiLib-X 自己实现
+从文件加载：
 
-litehtml 的 master CSS 里对 `input/select/button/textarea` 只给了
-`display: inline-block`，**不会画任何东西**（它设计上就把表单交给宿主）。
+```cpp
+pBox->SetHtmlFromFile(_T("page.html"));   // 相对 CPaintManagerUI::GetResourcePath()
+```
 
-DuiLib-X 通过 `create_element` 回调把这些标签接管为 `CHtmlFormElement`
-（`DuiLib/Control/UIDuiHtmlForm.h/.cpp`），按“替换元素(replaced element)”处理：
+### 14.4 HTML 内嵌格式（推荐原始字符串）
+
+**不要**用一行行 `_T("...")` 拼接 HTML —— 引号要转义、换行难读、无法从浏览器直接复制。
+
+用 C++11 的**原始字符串字面量**：
+
+```cpp
+// LR"( ... )" = 宽字符原始字符串，可赋给 LPCTSTR
+// R"( ... )"  = 窄字符原始字符串，赋给 std::string / char*
+static LPCTSTR kHtmlPage = LR"HTML(<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body { font-family: 微软雅黑; background: #EEF2F7; }
+    .card { background: #FFF; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+</style>
+</head>
+<body>
+    <div class="card">
+        <h3>标题</h3>
+        <p>正文</p>
+    </div>
+</body>
+</html>
+)HTML";
+```
+
+优点：
+
+| 对比项 | `_T("...")` 拼接 | `LR"(...)"` 原始字符串 |
+|---|---|---|
+| 引号 | 必须转义 `\"` | 直接写 `"` |
+| 换行 | 每行一个 `_T()` | 原样保留，可直接缩进 |
+| 从浏览器复制 | 需逐行改造 | **直接粘贴** |
+| 可读性 | 差（满屏 `_T(`） | 好（和普通 HTML 文件一样） |
+
+注意：原始字符串的结束标记是 `)HTML"`，`HTML` 是自定义分隔符，可换成任意标识符
+（如 `)PAGE"`）以避免和 HTML 内容里的 `)"` 冲突。
+
+### 14.5 支持的 HTML 标签
+
+| 类别 | 标签 |
+|---|---|
+| 文档结构 | `html` `head` `body` `title` `meta` `style` `script`（script 不执行） |
+| 块级容器 | `div` `section` `article` `aside` `header` `footer` `nav` `main` `figure` `figcaption` `details` `summary` `center` |
+| 文本块 | `p` `h1`~`h6` `blockquote` `pre` `hr` `address` `dl` `dt` `dd` |
+| 行内文本 | `span` `a` `b` `strong` `i` `em` `u` `s` `del` `ins` `strike` `small` `big` `mark` `sub` `sup` `code` `kbd` `samp` `var` `cite` `dfn` `abbr` `q` `time` `bdi` `bdo` `tt` `font` |
+| 列表 | `ul` `ol` `li`（`disc`/`circle`/`square`/`decimal` 四种标记） |
+| 表格 | `table` `thead` `tbody` `tfoot` `tr` `td` `th` `caption`（支持 `colspan`） |
+| 表单 | `input`(text/password/checkbox/radio/hidden/submit/button/reset) `select` `option` `button` `textarea` `label` `form` `fieldset` `legend` |
+| 媒体 | `img`（本地图片，支持 DuiLib zip 资源包） |
+| 其它 | `br` `wbr` `progress` `meter` `output` `dialog` |
+
+**不支持**：`canvas` `video` `audio` `iframe` `svg`（这些需要真正的图形/媒体引擎）。
+
+### 14.6 支持的 CSS3 属性
+
+#### 布局与定位
+
+| 属性 | 支持的值 |
+|---|---|
+| `display` | `none` `block` `inline` `inline-block` `flex` `inline-flex` `list-item` `table` `table-row` `table-cell` `table-row-group` |
+| `position` | `static` `relative` `absolute` `fixed` |
+| `top` / `right` / `bottom` / `left` | `px` `%` `em` `rem` `auto` |
+| `float` / `clear` | `left` `right` `none` / `left` `right` `both` |
+| `z-index` | 整数 |
+| `box-sizing` | `content-box` `border-box` |
+| `overflow` / `overflow-x` / `overflow-y` | `visible` `hidden` `auto` `scroll` |
+| `visibility` | `visible` `hidden` `collapse` |
+
+#### 尺寸
+
+`width` `height` `min-width` `min-height` `max-width` `max-height`
+—— 支持 `px` `%` `em` `rem` `pt` `vw` `vh` `auto`。
+
+#### 盒模型
+
+| 属性 | 说明 |
+|---|---|
+| `margin` / `margin-*` | 四值简写 + 单边，支持 `auto` |
+| `padding` / `padding-*` | 四值简写 + 单边 |
+| `border` / `border-*` | 简写 `1px solid #ccc`；四边独立宽度/样式/颜色 |
+| `border-style` | `solid` `dashed` `dotted` `double` `none` |
+| `border-radius` | 四角简写 + `水平/垂直` 双半径 + 单角（`border-top-left-radius` 等） |
+
+#### 背景
+
+| 属性 | 说明 |
+|---|---|
+| `background-color` | `#RGB` `#RRGGBB` `#RRGGBBAA` `rgb()` `rgba()` `hsl()` `hsla()` 颜色名 |
+| `background-image` | `url(...)` 本地图片、`linear-gradient(...)`、`radial-gradient(...)` |
+| `background` | 简写，同时支持颜色 + 渐变 / 图片 |
+| `background-repeat` | `repeat` `no-repeat` `repeat-x` `repeat-y` |
+
+**渐变语法**（完整支持）：
+
+```css
+/* 线性：角度 deg / rad / turn / 方向关键字 */
+background: linear-gradient(180deg, #3A6BE8 0%, #2D5BD7 100%);
+background: linear-gradient(to right, red, blue);
+background: linear-gradient(to bottom right, #fff, #eee);
+
+/* 径向：从中心向外 */
+background: radial-gradient(circle, #FFF 0%, #E0E6F0 100%);
+background: radial-gradient(ellipse, rgba(255,255,255,.9), transparent);
+```
+
+#### 文字
+
+| 属性 | 支持的值 |
+|---|---|
+| `color` | 所有 CSS 颜色格式 |
+| `font-size` | `px` `pt` `em` `rem` `%` + `small`/`medium`/`large`/`x-large` 等关键字 |
+| `font-family` | 字体名（自动回退到微软雅黑） |
+| `font-weight` | `normal` `bold` `100`~`900` |
+| `font-style` | `normal` `italic` `oblique` |
+| `font` | 简写 `bold 14px/1.5 "微软雅黑"` |
+| `line-height` | 数值（倍数）、`px`、`%`、`normal` |
+| `text-align` | `left` `center` `right` `justify` |
+| `text-decoration` | `underline` `line-through` `overline` |
+| `text-indent` | 首行缩进 |
+| `letter-spacing` / `word-spacing` | 字距/词距 |
+| `white-space` | `normal` `nowrap` `pre` `pre-wrap` `pre-line` |
+| `vertical-align` | `baseline` `top` `middle` `bottom` |
+
+#### CSS3 效果（自研引擎完整实现）
+
+| 属性 | 说明 |
+|---|---|
+| `opacity` | 0~1，逐层累积到子元素 |
+| `box-shadow` | 支持多组、`inset`、偏移/模糊/扩散/颜色。用 32 位 DIB + AlphaBlend 做真正的半透明模糊 |
+| `text-shadow` | 同上，绘制文字前先画阴影层 |
+| `filter` | `blur(Npx)`、`grayscale(N)`、`brightness(N)`（解析并存储，绘制层可用） |
+| `transform` / `transition` | 解析但不应用（保证 CSS 文件不因含这些属性而整条失效） |
+
+`box-shadow` 语法：
+
+```css
+box-shadow: 0 2px 10px rgba(45, 91, 215, 0.08);          /* 单层 */
+box-shadow: 0 1px 3px #0003, 0 8px 24px #0000001a;       /* 多层 */
+box-shadow: inset 0 1px 0 #fff;                          /* 内阴影（解析，当前绘制为外阴影） */
+```
+
+#### Flex 布局
+
+| 属性 | 支持的值 |
+|---|---|
+| `flex-direction` | `row` `row-reverse` `column` `column-reverse` |
+| `flex-wrap` | `nowrap` `wrap` `wrap-reverse` |
+| `justify-content` | `flex-start` `flex-end` `center` `space-between` `space-around` `space-evenly` |
+| `align-items` / `align-self` | `stretch` `flex-start` `flex-end` `center` `baseline` |
+| `flex-grow` / `flex-shrink` / `flex-basis` | 数值 / 长度 |
+| `flex` | 简写 `1` / `1 1 auto` / `none` / `auto` |
+| `gap` / `row-gap` / `column-gap` | 子项间距 |
+
+#### 列表与表格
+
+| 属性 | 支持的值 |
+|---|---|
+| `list-style-type` | `none` `disc` `circle` `square` `decimal` |
+| `list-style-position` | `inside` `outside` |
+| `border-collapse` | `separate` `collapse` |
+| `border-spacing` | 长度 |
+
+#### 其它
+
+`cursor`（`pointer` 会变成手型）、`content`。
+
+### 14.7 支持的 CSS 选择器
+
+| 类型 | 语法 | 示例 |
+|---|---|---|
+| 标签 | `tag` | `div { }` |
+| 类 | `.class` | `.card { }` |
+| ID | `#id` | `#main { }` |
+| 通配 | `*` | `* { margin: 0 }` |
+| 多类 | `.a.b` | `.btn.primary { }` |
+| 属性存在 | `[attr]` | `input[checked] { }` |
+| 属性等值 | `[attr=val]` | `input[type=text] { }` |
+| 属性包含词 | `[attr~=val]` | `[class~=card] { }` |
+| 属性前缀/后缀/子串 | `[attr^=]` `[attr$=]` `[attr*=]` | `a[href^="http"] { }` |
+| 后代 | `A B` | `.card p { }` |
+| 子元素 | `A > B` | `.card > h3 { }` |
+| 相邻兄弟 | `A + B` | `h3 + p { }` |
+| 一般兄弟 | `A ~ B` | `h3 ~ p { }` |
+| 伪类 | `:hover` `:active` `:first-child` `:last-child` `:only-child` `:first-of-type` `:last-of-type` `:nth-child(n)` `:not()` `:link` `:checked` `:disabled` `:enabled` `:root` `:empty` | `.win-btn:hover { }` |
+
+**特异性与级联**：按 `(important, ID 数, 类/属性/伪类数, 标签数)` 排序，后者覆盖前者。
+内联 `style="..."` 优先级最高。
+
+**`@media`**：支持 `screen` / `all` / 无媒体条件；`print` 会被跳过。
+`@supports`、`@keyframes` 会被忽略（不影响其它规则）。
+
+### 14.8 表单控件
+
+自研引擎把表单控件实现为"自绘控件"：
 
 | 标签 | 行为 |
 |---|---|
-| `<input type=text>` | 白底框 + 真实键盘输入 + 光标移动/退格/删除 |
-| `<input type=password>` | 同上，内容显示为 `*` |
-| `<input type=checkbox>` | 方框 + 勾选标记，点击切换 |
-| `<input type=radio>` | 圆点，点击选中 |
-| `<input type=hidden>` | 不绘制，但 `GetValue` 可读到 |
-| `<select>` | 下拉框（显示当前项 + 三角箭头） |
-| `<button>` | 按钮，点击触发 `DUI_MSGTYPE_HTMLFORMSUBMIT` |
-| `<textarea>` | 多行文本框 |
+| `<input type="text">` | 白底 + 边框 + 真实键盘输入（光标在末尾）+ 退格删除（UTF-8 按字符处理） |
+| `<input type="password">` | 同上，内容显示为 `*` |
+| `<input type="checkbox">` | 白底方框 + 蓝色对勾，点击切换 |
+| `<input type="radio">` | 白底圆圈 + 蓝色圆点，同 `name` 互斥 |
+| `<input type="hidden">` | 不绘制，但 `GetValue` 可读到 |
+| `<input type="submit|button|reset">` | 绘制为按钮，文字取 `value` |
+| `<select>` | 白底 + 边框 + 当前项文字 + 右侧三角箭头；点击循环切换选项 |
+| `<button>` | 灰底按钮，文字取子文本 |
+| `<textarea>` | 多行文本框，内容取子文本 |
 
-**键盘输入是怎么接上的**：`CHtmlBoxUI::DoEvent` 收到 `UIEVENT_CHAR` / `UIEVENT_KEYDOWN`
-就转发给容器，容器再转给当前焦点控件（`m_pFocusedForm`）。
-焦点由鼠标点击时的 `HitTestForm` 决定。
+样式全部走 CSS：`input[type=text] { width:260px; height:32px; border:1px solid #C8CFDA; border-radius:6px; }`
 
-### 14.4 数据双向交互
+### 14.9 数据双向交互
 
 ```cpp
 // 读
 CDuiString user = pBox->GetValue(_T("user"));        // input/select/textarea 的值
 bool remember   = pBox->IsChecked(_T("remember"));   // checkbox/radio 是否选中
+int  cityIdx    = pBox->GetSelectedIndex(_T("city")); // select 选中项索引
 
 // 写
 pBox->SetValue(_T("user"), _T("李四"));
 pBox->SetChecked(_T("remember"), false);
+pBox->SetSelectedIndex(_T("city"), 2);
 ```
 
 三个通知消息：
 
-| 消息 | 触发 | `wParam` |
+| 消息 | 触发时机 | `wParam` |
 |---|---|---|
 | `DUI_MSGTYPE_HTMLLINK` | `<a href>` 被点击 | 链接地址 |
-| `DUI_MSGTYPE_HTMLFORMSUBMIT` | `<button>` 被点击 | 控件 `name` |
-| `DUI_MSGTYPE_HTMLCHANGED` | 任意字段值变化 | 控件 `name` |
+| `DUI_MSGTYPE_HTMLFORMSUBMIT` | `<button>` / 带 `name` 的元素被点击 | 元素 `name` |
+| `DUI_MSGTYPE_HTMLCHANGED` | 任意表单字段值变化 | 元素 `name` |
 
 ```cpp
 void Notify(TNotifyUI& msg) override
@@ -917,81 +1158,192 @@ void Notify(TNotifyUI& msg) override
     if (msg.sType == DUI_MSGTYPE_HTMLFORMSUBMIT) {
         CHtmlBoxUI* pBox = static_cast<CHtmlBoxUI*>(m_pm->FindControl(_T("htmlBox")));
         if (pBox == NULL) return;
-        CDuiString s;
-        s.Format(_T("用户名=%s 城市=%s 记住=%s"),
-                 pBox->GetValue(_T("user")).GetData(),
-                 pBox->GetValue(_T("city")).GetData(),
-                 pBox->IsChecked(_T("remember")) ? _T("是") : _T("否"));
-        ::MessageBox(m_hWnd, s.GetData(), _T("后端收到"), MB_OK);
+
+        LPCTSTR pName = (LPCTSTR)msg.wParam;
+        if (_tcsicmp(pName, _T("win_close")) == 0) {
+            ::PostMessage(m_hWnd, WM_CLOSE, 0, 0);      // HTML 按钮关闭窗口
+            return;
+        }
+        if (_tcsicmp(pName, _T("do_login")) == 0) {
+            CDuiString s;
+            s.Format(_T("用户名=%s 城市=%s"),
+                     pBox->GetValue(_T("user")).GetData(),
+                     pBox->GetValue(_T("city")).GetData());
+            ::MessageBox(m_hWnd, s.GetData(), _T("后端收到"), MB_OK);
+        }
     }
 }
 ```
 
-### 14.5 支持范围
+### 14.10 完整示例：圆角无边框窗口 + HTML 自绘标题栏
 
-| 类别 | 支持 |
-|---|---|
-| 文本 | h1-h6 / p / b / i / u / font / br / span，颜色字号字重装饰 |
-| 布局 | div 嵌套、margin / padding / border、`display:inline-block`、table、hr |
-| CSS | 标签/类/ID/属性/后代选择器、级联、继承、`<style>` 块、外部 css、`@import`、`:hover`/`:active`/`:link` |
-| 表单 | 见 14.3 |
-| 图片 | 本地图片（含 DuiLib zip 资源包），`get_image_size` / `load_image` 走 `CRenderEngine` |
-| 不支持 | JavaScript、CSS 动画/过渡、canvas / video / iframe、Web Font |
+`HtmlDemo/HtmlDemo.cpp` 演示了完整做法：窗口无边框、圆角、标题栏和右上角三个按键
+（最小化/最大化/关闭）全部用 HTML 实现。
 
-### 14.6 常见坑（都是本仓库实际踩过的）
-
-**坑 ①：白屏——`Draw` 传给 litehtml 的 clip 用了窗口坐标**
-
-`litehtml::document::draw(hdc, x, y, clip)` 的 `clip` 参数是**文档坐标系**的矩形，
-litehtml 拿它和元素在文档坐标下的位置做相交判断。若传了含控件偏移的窗口坐标矩形，
-相交结果为空 → 一个元素都不画 → 纯白。
+**① 窗口创建（无边框 + 圆角）**
 
 ```cpp
-// ❌ 错：传控件绝对坐标
-litehtml::position clip(rcItem.left, rcItem.top, w, h);
-
-// ✅ 对：传文档坐标原点
-litehtml::position clip(0, 0, w, h);
+HWND hWnd = pFrame->Create(NULL, _T("标题"),
+    WS_OVERLAPPEDWINDOW & ~(WS_CAPTION | WS_THICKFRAME | WS_SYSMENU) | WS_VISIBLE,
+    WS_EX_WINDOWEDGE);
 ```
-
-**坑 ②：白屏——`Render` 前没告诉引擎客户区尺寸**
-
-`document::render(max_width)` 内部会调 `get_client_rect()` 拿高度。
-若此时 `m_rcClient` 还是全 0，排版按 0 宽度算，所有盒子塌陷成 0。
 
 ```cpp
-// ✅ 必须在 render 前设置
-m_rcClient.right  = m_rcClient.left + maxWidth;
-m_rcClient.bottom = m_rcClient.top + 600;   // 初始高度，内容会撑开
-m_doc->render(maxWidth);
+// WM_NCCREATE 里清除残留的边框样式位
+LONG_PTR st = ::GetWindowLongPtr(m_hWnd, GWL_STYLE);
+st &= ~(WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+::SetWindowLongPtr(m_hWnd, GWL_STYLE, st);
 ```
 
-**坑 ③：滚动时内容错位——没对 DC 做 y 偏移**
-
-litehtml 的绘制坐标始终从文档 (0,0) 开始，滚动要由宿主做坐标变换：
+**② 圆角（Win11 DWM 优先，Win10 回退 RGN）**
 
 ```cpp
-POINT ptOld = { 0, 0 };
-::GetViewportOrgEx(hdc, &ptOld);
-::SetViewportOrgEx(hdc, ptOld.x, ptOld.y - scrollY, NULL);
-m_doc->draw((litehtml::uint_ptr)hdc, 0, 0, &clip);
-::SetViewportOrgEx(hdc, ptOld.x, ptOld.y, NULL);
+// WM_SIZE 里
+HMODULE hDwm = ::LoadLibrary(_T("dwmapi.dll"));
+if (hDwm) {
+    typedef HRESULT (WINAPI *PFN)(HWND, DWORD, LPCVOID, DWORD);
+    PFN pfn = (PFN)::GetProcAddress(hDwm, "DwmSetWindowAttribute");
+    if (pfn) {
+        UINT pref = 2;                  // DWMWCP_ROUND
+        bDwmOk = SUCCEEDED(pfn(m_hWnd, 33, &pref, sizeof(pref)));   // DWMWA_WINDOW_CORNER_PREFERENCE
+    }
+    ::FreeLibrary(hDwm);
+}
+if (!bDwmOk) {
+    // Win10 回退：SetWindowRgn
+    HRGN hRgn = ::CreateRoundRectRgn(0, 0, w + 1, h + 1, 20, 20);
+    ::SetWindowRgn(m_hWnd, hRgn, TRUE);
+    ::DeleteObject(hRgn);
+}
 ```
 
-**坑 ④：`set_clip` / `del_clip` 空实现**
+**③ HTML 标题栏（含三个窗口按键）**
 
-litehtml 对 `overflow: hidden` 的元素会调 `set_clip`。若你只是建了个 Region 存起来、
-**从未 `SelectClipRgn` 到 DC**，裁剪完全不生效，滚动时子内容会画到外面。
-正确做法是容器在 `Draw` 期间保存 `m_hDrawDC`，`set_clip` 里真正应用到它。
+```html
+<style>
+.titlebar {
+    position: relative;
+    height: 52px;
+    background: linear-gradient(180deg, #3A6BE8 0%, #2D5BD7 100%);
+    border-radius: 10px 10px 0 0;
+}
+.win-btn {
+    position: absolute;
+    top: 9px;
+    width: 46px; height: 34px;
+    line-height: 34px;
+    text-align: center;
+    color: #E8EEFC;
+    border-radius: 6px;
+}
+.win-btn:hover { background-color: #4E7BEC; }
+.win-btn.close:hover { background-color: #E5484D; }
+.win-min   { right: 150px; }
+.win-max   { right: 100px; }
+.win-close { right: 50px; }
+</style>
 
-**坑 ⑤：控件没设背景色 → 露窗口黑底**
+<div class="titlebar">
+    <span style="position:absolute; left:20px; line-height:52px; color:#FFF;">DuiLib-X</span>
+    <div class="win-btn win-min"   name="win_min">—</div>
+    <div class="win-btn win-max"   name="win_max">□</div>
+    <div class="win-btn win-close" name="win_close">✕</div>
+</div>
+```
 
-`CHtmlBoxUI` 继承自 `CVerticalLayoutUI`，默认透明。窗口底色是黑的，
-所以一开始表现为“一片黑”。`DoPaint` 里先填白底 + 外部 `SetBkColor` 一起解决。
+**④ 标题栏拖动 + 四周缩放（WM_NCHITTEST）**
 
-**坑 ⑥：链接库没同步，改了源码却“没生效”**
+```cpp
+LRESULT OnNcHitTest(LPARAM lParam)
+{
+    POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+    ::ScreenToClient(m_hWnd, &pt);
+    RECT rcClient; ::GetClientRect(m_hWnd, &rcClient);
 
-本仓库 `DuiLib.vcxproj` 的静态库输出在 `DuiLib/Lib/DuiLib.lib`，
+    if (!::IsZoomed(m_hWnd)) {
+        const int kBorder = 4;                       // 四周 4px 可缩放
+        if (pt.y < rcClient.top + kBorder) { ... return HTTOP; }
+        if (pt.y > rcClient.bottom - kBorder) { ... return HTBOTTOM; }
+        if (pt.x < rcClient.left + kBorder) return HTLEFT;
+        if (pt.x > rcClient.right - kBorder) return HTRIGHT;
+    }
+    // 标题栏空白处可拖动（右侧 170px 留给三个按键）
+    int w = rcClient.right - rcClient.left;
+    if (pt.y >= 0 && pt.y < 52 && pt.x < w - 170) return HTCAPTION;
+
+    return HTCLIENT;
+}
+```
+
+### 14.11 引擎 API 速查
+
+`HtmlEngine::HtmlDocument`（`DuiLib/Control/HtmlEngine/HtmlDocument.h`）：
+
+```cpp
+// 加载
+bool LoadFromString(const std::string& html, const std::string& extraCss = "");
+bool LoadFromFile(const std::string& path, const std::string& extraCss = "");
+
+// 排版（宽度变化时调用）
+float Relayout(float viewportWidth);      // 返回文档总高度
+float GetWidth() const;
+float GetHeight() const;
+
+// 绘制
+void Paint(HDC hdc, float scrollX, float scrollY, float clipW, float clipH);
+
+// 交互
+Node* HitTest(float x, float y);
+bool  OnMouseMove(float x, float y);      // 返回是否需要重绘
+Node* OnClick(float x, float y);
+
+// 表单
+Node* FindFormByName(const std::string& name);
+std::string GetFormValue(Node* node);
+void        SetFormValue(Node* node, const std::string& value);
+bool        GetFormChecked(Node* node);
+void        SetFormChecked(Node* node, bool bChecked);
+int         GetFormSelectedIndex(Node* node);
+void        SetFormSelectedIndex(Node* node, int idx);
+
+// 键盘
+bool InputChar(wchar_t ch);
+bool InputKeyDown(int vkCode);
+
+// 回调
+void SetLinkClickCallback(std::function<void(const std::string& href)>);
+void SetFormSubmitCallback(std::function<void(const std::string& name)>);
+void SetFormChangedCallback(std::function<void(const std::string& name)>);
+void SetImageCallbacks(sizeFn, drawFn);   // 图片加载/绘制，由 DuiLib 注入
+```
+
+### 14.12 实战坑（自研引擎版）
+
+**坑 ①：`SendNotify` 的 `wParam` 是悬垂指针**
+
+`CPaintManagerUI::SendNotify` 的 `wParam` 只是一个 `WPARAM`（整数），
+若你传一个**局部** `CDuiString` 的 `GetData()`，Notify 里拿到的是已析构内存。
+
+```cpp
+// ❌ 错：局部变量，SendNotify 返回后析构
+CDuiString sName = ...;
+m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLFORMSUBMIT, (WPARAM)sName.GetData(), 0, true);
+
+// ✅ 对：存到成员变量，保证生命周期
+m_sNotifyName = ...;                       // CDuiString 成员
+m_pManager->SendNotify(this, ..., (WPARAM)m_sNotifyName.GetData(), 0, true);
+```
+
+**坑 ②：源码文件编码**
+
+工程用 UTF-8（**带 BOM**）保存。若新建的 `.cpp/.h` 是 UTF-8 **无 BOM**，
+MSVC 会按 GBK 读取，中文字符的尾字节会吞掉后面的引号/换行，报出
+`C3688 文本后缀无效`、`C2143 语法错误`、`C2614 非法成员初始化` 这类看不懂的错误。
+**加 BOM 即可**。
+
+**坑 ③：静态库不同步，改了源码"毫无效果"**
+
+`DuiLib.vcxproj` 的静态库输出在 `DuiLib/Lib/DuiLib.lib`，
 而 Demo 链接的是 `Lib/SRelease_Win32.lib`。**必须手工拷贝**，
 否则 msbuild 认为 exe 已是最新、跳过链接，你会一直看到旧画面：
 
@@ -999,15 +1351,34 @@ litehtml 对 `overflow: hidden` 的元素会调 `set_clip`。若你只是建了�
 copy /Y DuiLib\Lib\DuiLib.lib Lib\SRelease_Win32.lib
 ```
 
-**坑 ⑦：源码文件编码**
+**坑 ④：绝对定位的基准**
 
-工程用 UTF-8（**带 BOM**）保存。若新建的 `.cpp/.h` 是 UTF-8 **无 BOM**，
-MSVC 会按 GBK 读取，中文字符的尾字节会吞掉后面的引号/换行，报出
-`C3688 文本后缀无效`、`C2143 语法错误` 这类看不懂的错误。加 BOM 即可。
+`position:absolute` 的子元素按**最近的 positioned 祖先**（`position` 非 `static`）
+的 padding box 定位。父容器必须有 `position:relative`，否则会跑到 body 原点：
 
-### 14.7 自测
+```css
+.titlebar { position: relative; }      /* 必须 */
+.win-btn  { position: absolute; right: 50px; }
+```
 
-`HtmlDemo/HtmlFormTest.cpp` 是一个**无窗口控制台自测**，验证表单链路
+**坑 ⑤：`text-align` 只对行内内容生效**
+
+`text-align:center` 只影响**行内级**子内容（文本、`inline`、`inline-block`）。
+对块级子元素无效——块级元素自己撑满宽度。居中块级元素用 `margin: 0 auto`。
+
+**坑 ⑥：表单控件不继承 `color`**
+
+表单控件的文字颜色由 `color` 决定，但某些浏览器默认值不同。
+自研引擎里统一继承父级 `color`，需要特殊颜色时显式写 `input { color: #333; }`。
+
+**坑 ⑦：GDI+ 必须先初始化**
+
+`HtmlPainter` 内部用 `GdiplusStartup` 引用计数管理，第一次 `new HtmlPainter()` 时自动初始化。
+若你在别处也调用了 `GdiplusStartup`，注意配对 `GdiplusShutdown`。
+
+### 14.13 自测
+
+`HtmlDemo/HtmlFormTest.cpp` 是**无窗口控制台自测**，验证表单链路
 （查找、读写、勾选、中英文输入、退格按字符而非字节）：
 
 ```bat
@@ -1015,7 +1386,18 @@ msbuild HtmlDemo\HtmlFormTest.vcxproj /p:Configuration=SRelease /p:Platform=Win3
 HtmlDemo\bin\HtmlFormTest.exe
 ```
 
-当前 25 项断言全部通过。
+### 14.14 性能与限制
+
+| 项 | 说明 |
+|---|---|
+| 解析 | 每次 `SetHtml` 重新解析 + 级联 + 布局。大文档（>1MB）建议 `SetHtmlFromFile` |
+| 重排 | 宽度变化触发完整重排；高度变化只更新滚动范围 |
+| 渐变绘制 | 逐像素计算后 `BitBlt`，大尺寸渐变（>1000px）会有几十毫秒开销 |
+| 阴影绘制 | 32 位 DIB + `AlphaBlend`，每层阴影独立 DIB；阴影多时注意性能 |
+| 字体缓存 | GDI+ 字体对象全局缓存（family+size+bold+italic 为键） |
+| 图片 | 走 DuiLib `CRenderEngine`，支持 zip 资源包 |
+| 不支持 | JavaScript、CSS 动画/过渡、`canvas`/`video`/`iframe`、Web Font、SVG |
+
 
 ---
 
@@ -1028,8 +1410,13 @@ HtmlDemo\bin\HtmlFormTest.exe
 | `ControlDemo/ControlDemo.vcxproj` | SRelease(静态)/Release(动态) × Win32/x64 四种配置 |
 | `HtmlDemo/HtmlDemo.cpp` | 纯 HTML 界面演示（登录表单 + 事件回调） |
 | `HtmlDemo/HtmlFormTest.cpp` | 表单链路无窗口自测（25 项断言） |
-| `DuiLib/Control/UIDuiHtmlContainer.*` | litehtml `document_container` 全部 24 个回调实现 |
-| `DuiLib/Control/UIDuiHtmlForm.*` | 表单控件元素（input/select/button/textarea） |
+| `DuiLib/Control/HtmlEngine/HtmlTypes.*` | 基础类型：颜色/长度/枚举/阴影/渐变/边框 |
+| `DuiLib/Control/HtmlEngine/HtmlDom.*` | DOM 节点树 + 计算样式（ComputedStyle） |
+| `DuiLib/Control/HtmlEngine/HtmlParser.*` | HTML5 容错解析器 + 实体解码 |
+| `DuiLib/Control/HtmlEngine/HtmlCss.*` | CSS3 解析 + 选择器匹配 + 级联 + 默认样式表 |
+| `DuiLib/Control/HtmlEngine/HtmlLayout.*` | 布局引擎（Block/Inline/Flex/Table/绝对定位） |
+| `DuiLib/Control/HtmlEngine/HtmlPainter.*` | GDI+ 绘制（圆角/渐变/阴影/文字/表单控件） |
+| `DuiLib/Control/HtmlEngine/HtmlDocument.*` | 引擎门面（解析→级联→布局→绘制） |
 | `DuiLib/Control/UIHtmlBox.*` | HtmlBox 控件对外 API |
 
 编译运行：
