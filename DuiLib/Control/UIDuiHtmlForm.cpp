@@ -41,20 +41,6 @@ static int FormUtf8CharCount(const std::string& s)
     return count;
 }
 
-// 取 UTF-8 字符串前 n 个字符对应的字节长度
-static size_t FormUtf8ByteOffset(const std::string& s, int nChars)
-{
-    if (nChars <= 0) return 0;
-    int count = 0;
-    for (size_t i = 0; i < s.size(); i++) {
-        if ((s[i] & 0xC0) != 0x80) {
-            if (count == nChars) return i;
-            count++;
-        }
-    }
-    return s.size();
-}
-
 // ============================ 构造 ============================
 
 CHtmlFormElement::CHtmlFormElement(const std::shared_ptr<litehtml::document>& doc)

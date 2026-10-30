@@ -19,20 +19,16 @@ CHtmlBoxUI::CHtmlBoxUI(void)
     // 表单提交（<button> 或 <input type=submit> 点击）
     m_container.SetFormSubmitCallback([this](CHtmlFormElement* pEl) {
         if (m_pManager != NULL) {
-            const std::string& name = pEl->GetFormName();
-            char* pUtf8 = NULL;
-            (void)pUtf8;
-            CDuiString sName;
-            wchar_t* w = DuiHtmlUtf8ToW(name);
-            if (w) { sName = w; delete[] w; }
+            wchar_t* w = DuiHtmlUtf8ToW(pEl->GetFormName());
+            CDuiString sName = w ? (LPCTSTR)w : _T("");
+            if (w) delete[] w;
             m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLFORMSUBMIT, (WPARAM)sName.GetData(), 0, true);
         }
     });
     // 表单数据变化（输入、勾选、下拉切换）
     m_container.SetFormChangedCallback([this](CHtmlFormElement* pEl) {
         if (m_pManager != NULL) {
-            const std::string& name = pEl->GetFormName();
-            wchar_t* w = DuiHtmlUtf8ToW(name);
+            wchar_t* w = DuiHtmlUtf8ToW(pEl->GetFormName());
             CDuiString sName = w ? (LPCTSTR)w : _T("");
             if (w) delete[] w;
             m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLCHANGED, (WPARAM)sName.GetData(), 0, true);
