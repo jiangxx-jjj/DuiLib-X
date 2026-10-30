@@ -103,6 +103,13 @@ public:
             s.Format(_T("HTML 链接点击：%s"), (LPCTSTR)msg.wParam);
             SetStatus(s);
         }
+        else if (type == DUI_MSGTYPE_HTMLFORMSUBMIT)
+        {
+            CDuiString s;
+            s.Format(_T("HTML 按钮点击：%s"), (LPCTSTR)msg.wParam);
+            SetStatus(s);
+            ReadHtmlForm();
+        }
         else if (type == DUI_MSGTYPE_LINK)
             SetStatus(CDuiString(_T("点击链接：")) + msg.pSender->GetText());
     }

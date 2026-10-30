@@ -1,4 +1,4 @@
-﻿// ==========================================================================
+// ==========================================================================
 //  HtmlDemo.cpp — 纯 HTML 界面演示
 //  一个窗口 + 全屏 HtmlBox，界面全部用 HTML/CSS 描述
 //  事件在 C++ 处理，数据通过 GetValue/SetValue 双向交互
@@ -18,12 +18,16 @@ _T(".titlebar { background-color: #2D5BD7; padding: 14px 20px; }")
 _T(".titlebar h2 { color: #FFFFFF; margin: 0; font-size: 18px; }")
 _T(".card { background-color: #FFFFFF; border: 1px solid #D9E0EA; margin: 12px 16px; padding: 14px 18px; }")
 _T(".card h3 { color: #2D5BD7; margin: 0 0 10px 0; font-size: 15px; }")
-_T(".row { margin: 8px 0; }")
+_T(".row { margin: 10px 0; }")
 _T("label { color: #555555; margin-right: 8px; }")
 _T("a { color: #1E6FFF; text-decoration: underline; }")
 _T(".btn-row { margin-top: 14px; }")
 _T(".footer { text-align: center; color: #98A2B3; font-size: 12px; padding: 10px; }")
 _T(".ok { color: #28C76F; font-weight: bold; }")
+_T("input[type=text], input[type=password] { width: 260px; height: 30px; border: 1px solid #C8CFDA; background-color: #FFFFFF; }")
+_T("select { width: 180px; height: 30px; border: 1px solid #C8CFDA; background-color: #FFFFFF; }")
+_T("button { width: 110px; height: 32px; border: 1px solid #C8CFDA; background-color: #F0F3F8; margin-right: 10px; }")
+_T("input[type=checkbox], input[type=radio] { width: 16px; height: 16px; margin-right: 4px; }")
 _T("</style>")
 
 _T("<div class='titlebar'><h2>用户中心 — 纯 HTML 界面演示</h2></div>")
@@ -45,8 +49,8 @@ _T("</div>")
 _T("<div class='card'>")
 _T("<h3>操作</h3>")
 _T("<div class='btn-row'>")
-_T("<button onclick='do_login'>登 录</button>")
-_T("<button onclick='do_reset'>重 置</button>")
+_T("<button name='do_login'>登 录</button>")
+_T("<button name='do_reset'>重 置</button>")
 _T("</div>")
 _T("<p>提示：<span class='ok'>HTML 渲染正常，输入框为原生控件</span></p>")
 _T("<p>更多信息请访问 <a href='https://github.com/jiangxx-jjj/DuiLib-X'>DuiLib-X 项目主页</a>。</p>")
@@ -72,6 +76,7 @@ public:
 
             CHtmlBoxUI* pBox = new CHtmlBoxUI();
             pBox->SetName(_T("htmlBox"));
+            pBox->SetBkColor(0xFFEEF2F7);
             pBox->SetManager(m_pm, NULL, true);
             m_pm->AttachDialog(pBox);
             pBox->SetHtml(PAGE_MAIN);
@@ -94,10 +99,24 @@ public:
             s.Format(_T("链接点击: %s"), (LPCTSTR)msg.wParam);
             ::MessageBox(m_hWnd, s.GetData(), _T("DuiLib-X HTML Demo"), MB_OK | MB_ICONINFORMATION);
         }
-        else if (msg.sType == DUI_MSGTYPE_CLICK && msg.pSender->GetName() == _T("do_login"))
+        else if (msg.sType == DUI_MSGTYPE_HTMLFORMSUBMIT)
         {
+            // <button> 点击 → 后端读取表单数据
             CHtmlBoxUI* pBox = static_cast<CHtmlBoxUI*>(m_pm->FindControl(_T("htmlBox")));
             if (pBox == NULL) return;
+
+            LPCTSTR pName = (LPCTSTR)msg.wParam;
+            if (pName != NULL && _tcsicmp(pName, _T("do_reset")) == 0)
+            {
+                // 重置按钮
+                pBox->SetValue(_T("user"), _T(""));
+                pBox->SetValue(_T("pwd"), _T(""));
+                pBox->SetChecked(_T("remember"), false);
+                ::MessageBox(m_hWnd, _T("表单已重置"), _T("后端处理"), MB_OK | MB_ICONINFORMATION);
+                return;
+            }
+
+            // 登录按钮：读取全部表单字段
             CDuiString s;
             s.Format(_T("登录请求\n\n用户名: %s\n密码长度: %d\n城市: %s\n记住密码: %s"),
                      pBox->GetValue(_T("user")).GetData(),
@@ -105,15 +124,6 @@ public:
                      pBox->GetValue(_T("city")).GetData(),
                      pBox->IsChecked(_T("remember")) ? _T("是") : _T("否"));
             ::MessageBox(m_hWnd, s.GetData(), _T("后端收到表单数据"), MB_OK | MB_ICONINFORMATION);
-            pBox->SetValue(_T("user"), _T("登录成功"));
-        }
-        else if (msg.sType == DUI_MSGTYPE_CLICK && msg.pSender->GetName() == _T("do_reset"))
-        {
-            CHtmlBoxUI* pBox = static_cast<CHtmlBoxUI*>(m_pm->FindControl(_T("htmlBox")));
-            if (pBox == NULL) return;
-            pBox->SetValue(_T("user"), _T(""));
-            pBox->SetValue(_T("pwd"), _T(""));
-            pBox->SetChecked(_T("remember"), false);
         }
     }
 

@@ -12,11 +12,11 @@
 
 #include "../Layout/UIVerticalLayout.h"
 #include "UIDuiHtmlContainer.h"
+#include "UIDuiHtmlForm.h"
 
 namespace DuiLib
 {
 
-// HTMLBOX_VERSION_MARKER_V2
 class UILIB_API CHtmlBoxUI : public CVerticalLayoutUI
 {
     DECLARE_DUICONTROL(CHtmlBoxUI)
@@ -42,6 +42,13 @@ public:
     void SetValue(LPCTSTR name, LPCTSTR value);     // 写值（同步到控件）
     bool IsChecked(LPCTSTR name);                   // radio/checkbox 选中状态
     void SetChecked(LPCTSTR name, bool bChecked);
+
+protected:
+    static CControlUI* FindChildByName(CControlUI* pParent, LPCTSTR name);
+
+    // UTF-8 与 TSTR 转换辅助
+    static char*    DuiHtmlWToUtf8(LPCTSTR wstr);
+    static wchar_t* DuiHtmlUtf8ToW(const std::string& s);
 
     // ---- CVerticalLayoutUI 覆盖 ----
     void SetPos(RECT rc, bool bNeedInvalidate = true) override;

@@ -22,9 +22,13 @@
 #pragma pop_macro("max")
 #include <map>
 #include <vector>
+#include <functional>
 
 namespace DuiLib
 {
+
+// 前置声明：表单控件元素（定义在 UIDuiHtmlForm.h）
+class CHtmlFormElement;
 
 class CDuiHtmlContainer : public litehtml::document_container
 {
@@ -58,6 +62,26 @@ public:
     // ---- 事件回调（宿主设置）----
     // on_link_click: <a href> 点击时回调（href 为链接地址）
     void SetLinkClickCallback(std::function<void(const CDuiString& href)> cb) { m_fnLinkClick = cb; }
+    // 表单提交/数据变化回调
+    void SetFormSubmitCallback(std::function<void(CHtmlFormElement* pEl)> cb) { m_fnFormSubmit = cb; }
+    void SetFormChangedCallback(std::function<void(CHtmlFormElement* pEl)> cb) { m_fnFormChanged = cb; }
+
+    // ---- 表单控件（由 CHtmlFormElement 回调，供 CHtmlBoxUI 使用）----
+    void OnFormSubmit(CHtmlFormElement* pEl);
+    void OnFormChanged(CHtmlFormElement* pEl);
+    // 按 name 查找表单控件（递归遍历文档树）
+    CHtmlFormElement* FindFormElement(LPCTSTR name);
+    // 当前获得键盘焦点的表单控件
+    CHtmlFormElement* GetFocusedForm(void) const { return m_pFocusedForm; }
+    // 设置焦点控件（NULL 表示取消）
+    void SetFocusedForm(CHtmlFormElement* pEl);
+    // 键盘输入转发
+    bool InputChar(wchar_t ch);
+    bool InputKeyDown(int vkCode);
+    // 在文档中查找命中的表单控件（供鼠标点击判断）
+    CHtmlFormElement* HitTestForm(int x, int y);
+    // 按 litehtml 字体句柄取真实 HFONT（表单控件自绘用）
+    HFONT GetRealFont(litehtml::uint_ptr hFont);
 
     // ---- 资源路径（图片/css 相对路径基准）----
     void SetBasePath(LPCTSTR path) { m_sBasePath = path; }
@@ -125,6 +149,12 @@ private:
     // 裁剪栈
     struct ClipInfo { HRGN hRgn; };
     std::vector<HRGN> m_clipStack;
+    HDC m_hDrawDC;   // Draw 期间保存的 DC，供 set_clip/del_clip 使用
+
+    // 表单相关
+    std::function<void(CHtmlFormElement*)> m_fnFormSubmit;
+    std::function<void(CHtmlFormElement*)> m_fnFormChanged;
+    CHtmlFormElement* m_pFocusedForm;   // 当前焦点控件
 };
 
 } // namespace DuiLib

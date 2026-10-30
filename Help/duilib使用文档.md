@@ -825,7 +825,199 @@ pFrame->Create(..., WS_EX_LAYERED | WS_EX_WINDOWEDGE);   // 窗口隐身！
 
 ---
 
-## 附录 A：示例工程说明
+## 14. HTML/CSS 界面渲染（HtmlBox 控件）
+
+> 本章是 DuiLib-X 的核心增强：**用 HTML/CSS 写界面，不依赖任何浏览器内核**。
+> 排版交给 [litehtml](https://github.com/litehtml/litehtml)（BSD-3，约 2 万行 C++），
+> 绘制与交互全部由 DuiLib 原生完成。
+
+### 14.1 原理：三层结构
+
+```
+你的 HTML 字符串
+      ↓
+litehtml 解析（内置 gumbo HTML5 解析器）+ CSS 级联 + 盒模型排版
+      ↓ 算出每个元素的 位置/尺寸/颜色/字体
+CDuiHtmlContainer（document_container 回调实现）
+      ↓ 把排版结果用 GDI 画到 DuiLib 的内存 DC
+CHtmlBoxUI（DuiLib 控件，可直接放进 XML 或程序化创建）
+```
+
+litehtml 是**排版计算引擎，不是绘制引擎**——它只负责“算出每个盒子在哪、多大、什么颜色”，
+真正画像素要靠宿主实现 `document_container` 的 24 个虚函数。
+DuiLib-X 把这 24 个回调全部实现在 `DuiLib/Control/UIDuiHtmlContainer.cpp`。
+
+### 14.2 最小示例
+
+```cpp
+#include "UIlib.h"
+using namespace DuiLib;
+
+CHtmlBoxUI* pBox = new CHtmlBoxUI();
+pBox->SetName(_T("htmlBox"));
+pBox->SetBkColor(0xFFEEF2F7);          // 控件底色（必须设，否则露窗口黑底）
+pBox->SetManager(m_pm, NULL, true);
+m_pm->AttachDialog(pBox);              // 作为根控件
+pBox->SetHtml(PAGE_MAIN);              // 或 SetHtmlFromFile(_T("page.html"))
+```
+
+XML 写法：
+
+```xml
+<HtmlBox name="htmlBox" bkcolor="0xFFEEF2F7" html="page.html" />
+<!-- 或直接内联：htmltext="&lt;div&gt;你好&lt;/div&gt;" -->
+```
+
+### 14.3 表单控件：litehtml 不提供，DuiLib-X 自己实现
+
+litehtml 的 master CSS 里对 `input/select/button/textarea` 只给了
+`display: inline-block`，**不会画任何东西**（它设计上就把表单交给宿主）。
+
+DuiLib-X 通过 `create_element` 回调把这些标签接管为 `CHtmlFormElement`
+（`DuiLib/Control/UIDuiHtmlForm.h/.cpp`），按“替换元素(replaced element)”处理：
+
+| 标签 | 行为 |
+|---|---|
+| `<input type=text>` | 白底框 + 真实键盘输入 + 光标移动/退格/删除 |
+| `<input type=password>` | 同上，内容显示为 `*` |
+| `<input type=checkbox>` | 方框 + 勾选标记，点击切换 |
+| `<input type=radio>` | 圆点，点击选中 |
+| `<input type=hidden>` | 不绘制，但 `GetValue` 可读到 |
+| `<select>` | 下拉框（显示当前项 + 三角箭头） |
+| `<button>` | 按钮，点击触发 `DUI_MSGTYPE_HTMLFORMSUBMIT` |
+| `<textarea>` | 多行文本框 |
+
+**键盘输入是怎么接上的**：`CHtmlBoxUI::DoEvent` 收到 `UIEVENT_CHAR` / `UIEVENT_KEYDOWN`
+就转发给容器，容器再转给当前焦点控件（`m_pFocusedForm`）。
+焦点由鼠标点击时的 `HitTestForm` 决定。
+
+### 14.4 数据双向交互
+
+```cpp
+// 读
+CDuiString user = pBox->GetValue(_T("user"));        // input/select/textarea 的值
+bool remember   = pBox->IsChecked(_T("remember"));   // checkbox/radio 是否选中
+
+// 写
+pBox->SetValue(_T("user"), _T("李四"));
+pBox->SetChecked(_T("remember"), false);
+```
+
+三个通知消息：
+
+| 消息 | 触发 | `wParam` |
+|---|---|---|
+| `DUI_MSGTYPE_HTMLLINK` | `<a href>` 被点击 | 链接地址 |
+| `DUI_MSGTYPE_HTMLFORMSUBMIT` | `<button>` 被点击 | 控件 `name` |
+| `DUI_MSGTYPE_HTMLCHANGED` | 任意字段值变化 | 控件 `name` |
+
+```cpp
+void Notify(TNotifyUI& msg) override
+{
+    if (msg.sType == DUI_MSGTYPE_HTMLFORMSUBMIT) {
+        CHtmlBoxUI* pBox = static_cast<CHtmlBoxUI*>(m_pm->FindControl(_T("htmlBox")));
+        if (pBox == NULL) return;
+        CDuiString s;
+        s.Format(_T("用户名=%s 城市=%s 记住=%s"),
+                 pBox->GetValue(_T("user")).GetData(),
+                 pBox->GetValue(_T("city")).GetData(),
+                 pBox->IsChecked(_T("remember")) ? _T("是") : _T("否"));
+        ::MessageBox(m_hWnd, s.GetData(), _T("后端收到"), MB_OK);
+    }
+}
+```
+
+### 14.5 支持范围
+
+| 类别 | 支持 |
+|---|---|
+| 文本 | h1-h6 / p / b / i / u / font / br / span，颜色字号字重装饰 |
+| 布局 | div 嵌套、margin / padding / border、`display:inline-block`、table、hr |
+| CSS | 标签/类/ID/属性/后代选择器、级联、继承、`<style>` 块、外部 css、`@import`、`:hover`/`:active`/`:link` |
+| 表单 | 见 14.3 |
+| 图片 | 本地图片（含 DuiLib zip 资源包），`get_image_size` / `load_image` 走 `CRenderEngine` |
+| 不支持 | JavaScript、CSS 动画/过渡、canvas / video / iframe、Web Font |
+
+### 14.6 常见坑（都是本仓库实际踩过的）
+
+**坑 ①：白屏——`Draw` 传给 litehtml 的 clip 用了窗口坐标**
+
+`litehtml::document::draw(hdc, x, y, clip)` 的 `clip` 参数是**文档坐标系**的矩形，
+litehtml 拿它和元素在文档坐标下的位置做相交判断。若传了含控件偏移的窗口坐标矩形，
+相交结果为空 → 一个元素都不画 → 纯白。
+
+```cpp
+// ❌ 错：传控件绝对坐标
+litehtml::position clip(rcItem.left, rcItem.top, w, h);
+
+// ✅ 对：传文档坐标原点
+litehtml::position clip(0, 0, w, h);
+```
+
+**坑 ②：白屏——`Render` 前没告诉引擎客户区尺寸**
+
+`document::render(max_width)` 内部会调 `get_client_rect()` 拿高度。
+若此时 `m_rcClient` 还是全 0，排版按 0 宽度算，所有盒子塌陷成 0。
+
+```cpp
+// ✅ 必须在 render 前设置
+m_rcClient.right  = m_rcClient.left + maxWidth;
+m_rcClient.bottom = m_rcClient.top + 600;   // 初始高度，内容会撑开
+m_doc->render(maxWidth);
+```
+
+**坑 ③：滚动时内容错位——没对 DC 做 y 偏移**
+
+litehtml 的绘制坐标始终从文档 (0,0) 开始，滚动要由宿主做坐标变换：
+
+```cpp
+POINT ptOld = { 0, 0 };
+::GetViewportOrgEx(hdc, &ptOld);
+::SetViewportOrgEx(hdc, ptOld.x, ptOld.y - scrollY, NULL);
+m_doc->draw((litehtml::uint_ptr)hdc, 0, 0, &clip);
+::SetViewportOrgEx(hdc, ptOld.x, ptOld.y, NULL);
+```
+
+**坑 ④：`set_clip` / `del_clip` 空实现**
+
+litehtml 对 `overflow: hidden` 的元素会调 `set_clip`。若你只是建了个 Region 存起来、
+**从未 `SelectClipRgn` 到 DC**，裁剪完全不生效，滚动时子内容会画到外面。
+正确做法是容器在 `Draw` 期间保存 `m_hDrawDC`，`set_clip` 里真正应用到它。
+
+**坑 ⑤：控件没设背景色 → 露窗口黑底**
+
+`CHtmlBoxUI` 继承自 `CVerticalLayoutUI`，默认透明。窗口底色是黑的，
+所以一开始表现为“一片黑”。`DoPaint` 里先填白底 + 外部 `SetBkColor` 一起解决。
+
+**坑 ⑥：链接库没同步，改了源码却“没生效”**
+
+本仓库 `DuiLib.vcxproj` 的静态库输出在 `DuiLib/Lib/DuiLib.lib`，
+而 Demo 链接的是 `Lib/SRelease_Win32.lib`。**必须手工拷贝**，
+否则 msbuild 认为 exe 已是最新、跳过链接，你会一直看到旧画面：
+
+```bat
+copy /Y DuiLib\Lib\DuiLib.lib Lib\SRelease_Win32.lib
+```
+
+**坑 ⑦：源码文件编码**
+
+工程用 UTF-8（**带 BOM**）保存。若新建的 `.cpp/.h` 是 UTF-8 **无 BOM**，
+MSVC 会按 GBK 读取，中文字符的尾字节会吞掉后面的引号/换行，报出
+`C3688 文本后缀无效`、`C2143 语法错误` 这类看不懂的错误。加 BOM 即可。
+
+### 14.7 自测
+
+`HtmlDemo/HtmlFormTest.cpp` 是一个**无窗口控制台自测**，验证表单链路
+（查找、读写、勾选、中英文输入、退格按字符而非字节）：
+
+```bat
+msbuild HtmlDemo\HtmlFormTest.vcxproj /p:Configuration=SRelease /p:Platform=Win32
+HtmlDemo\bin\HtmlFormTest.exe
+```
+
+当前 25 项断言全部通过。
+
+---
 
 | 文件 | 内容 |
 |---|---|
@@ -834,6 +1026,11 @@ pFrame->Create(..., WS_EX_LAYERED | WS_EX_WINDOWEDGE);   // 窗口隐身！
 | `ControlDemo/skin/menu.xml` | 右键菜单示例 |
 | `ControlDemo/skin/child_panel.xml` | ChildLayout 嵌入示例 |
 | `ControlDemo/ControlDemo.vcxproj` | SRelease(静态)/Release(动态) × Win32/x64 四种配置 |
+| `HtmlDemo/HtmlDemo.cpp` | 纯 HTML 界面演示（登录表单 + 事件回调） |
+| `HtmlDemo/HtmlFormTest.cpp` | 表单链路无窗口自测（25 项断言） |
+| `DuiLib/Control/UIDuiHtmlContainer.*` | litehtml `document_container` 全部 24 个回调实现 |
+| `DuiLib/Control/UIDuiHtmlForm.*` | 表单控件元素（input/select/button/textarea） |
+| `DuiLib/Control/UIHtmlBox.*` | HtmlBox 控件对外 API |
 
 编译运行：
 

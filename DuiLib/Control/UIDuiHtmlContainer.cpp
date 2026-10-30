@@ -1,5 +1,7 @@
 ﻿#include "StdAfx.h"
 #include "UIDuiHtmlContainer.h"
+#include "UIDuiHtmlForm.h"
+
 // UTF-8 ↔ TSTR 转换（litehtml 桥接专用，显式 Win32 API 实现避免编码依赖）
 static char* DuiW2Utf8(LPCTSTR wstr)
 {
@@ -28,6 +30,8 @@ CDuiHtmlContainer::CDuiHtmlContainer(void)
     , m_iDPI(96)
     , m_iDefaultFontSize(14)
     , m_nextFontSlot(1)
+    , m_hDrawDC(NULL)
+    , m_pFocusedForm(NULL)
 {
     m_sDefaultFontName = _T("微软雅黑");
     m_rcClient.left = m_rcClient.top = m_rcClient.right = m_rcClient.bottom = 0;
@@ -41,6 +45,7 @@ CDuiHtmlContainer::~CDuiHtmlContainer(void)
 void CDuiHtmlContainer::DestroyDocument(void)
 {
     m_doc.reset();
+    m_pFocusedForm = NULL;   // 文档销毁后焦点控件指针失效，必须清空
     // 清理字体缓存
     for (auto& pair : m_fontCache) {
         if (pair.second) ::DeleteObject(pair.second);
@@ -78,6 +83,9 @@ bool CDuiHtmlContainer::CreateDocument(LPCTSTR html, LPCTSTR css)
 int CDuiHtmlContainer::Render(int maxWidth)
 {
     if (!m_doc) return 0;
+    // 排版前把客户区告诉 litehtml（get_client_rect 回调用），否则按 0 宽度排版全部塌陷
+    m_rcClient.right = m_rcClient.left + maxWidth;
+    m_rcClient.bottom = m_rcClient.top + 600;   // 高度由内容决定，先给初始值
     m_doc->render(maxWidth);
     return m_doc->height();
 }
@@ -97,9 +105,22 @@ void CDuiHtmlContainer::Draw(HDC hdc, int scrollY, const RECT& rcClient)
     if (!m_doc) return;
     m_scrollY = scrollY;
     m_rcClient = rcClient;
-    litehtml::position clip(rcClient.left, rcClient.top - scrollY,
+    m_hDrawDC = hdc;
+
+    // 关键：对 DC 应用 y 偏移，使文档坐标(0..docH)映射到窗口坐标(-scrollY..docH-scrollY)
+    POINT ptOld = { 0, 0 };
+    ::GetViewportOrgEx(hdc, &ptOld);
+    ::SetViewportOrgEx(hdc, ptOld.x, ptOld.y - scrollY, NULL);
+
+    // 注意：clip 必须用【文档坐标系】的矩形（0,0,w,h），
+    // 因为 litehtml 会拿它和元素在文档坐标下的位置做相交判断。
+    // 若传窗口坐标（含 m_rcItem 偏移），相交结果为空 → 一个元素都不画 → 白屏。
+    litehtml::position clip(0, 0,
                             rcClient.right - rcClient.left, rcClient.bottom - rcClient.top);
-    m_doc->draw((litehtml::uint_ptr)hdc, 0, -scrollY, &clip);
+    m_doc->draw((litehtml::uint_ptr)hdc, 0, 0, &clip);
+
+    ::SetViewportOrgEx(hdc, ptOld.x, ptOld.y, NULL);
+    m_hDrawDC = NULL;
 }
 
 void CDuiHtmlContainer::OnMouseMove(POINT pt)
@@ -107,14 +128,27 @@ void CDuiHtmlContainer::OnMouseMove(POINT pt)
     if (m_doc) { litehtml::position::vector redraw; m_doc->on_mouse_over(pt.x, pt.y + m_scrollY, pt.x, pt.y, redraw); }
 }
 
-void CDuiHtmlContainer::OnLeftButtonDown(POINT pt)
-{
-    if (m_doc) { litehtml::position::vector redraw; m_doc->on_lbutton_down(pt.x, pt.y + m_scrollY, pt.x, pt.y, redraw); }
-}
-
 void CDuiHtmlContainer::OnLeftButtonUp(POINT pt)
 {
     if (m_doc) { litehtml::position::vector redraw; m_doc->on_lbutton_up(pt.x, pt.y + m_scrollY, pt.x, pt.y, redraw); }
+}
+
+void CDuiHtmlContainer::OnLeftButtonDown(POINT pt)
+{
+    if (!m_doc) return;
+
+    // 先判断是否点到表单控件（用文档坐标，需加滚动偏移）
+    int docX = pt.x;
+    int docY = pt.y + m_scrollY;
+    CHtmlFormElement* pForm = HitTestForm(docX, docY);
+    if (pForm != NULL) {
+        SetFocusedForm(pForm->IsEditable() ? pForm : NULL);
+    } else {
+        SetFocusedForm(NULL);
+    }
+
+    litehtml::position::vector redraw;
+    m_doc->on_lbutton_down(pt.x, pt.y + m_scrollY, pt.x, pt.y, redraw);
 }
 
 void CDuiHtmlContainer::SetScrollOffset(int scrollY)
@@ -537,13 +571,20 @@ void CDuiHtmlContainer::import_css(litehtml::string& text, const litehtml::strin
 
 void CDuiHtmlContainer::set_clip(const litehtml::position& pos, const litehtml::border_radiuses& bdr_radius)
 {
-    HRGN hRgn = ::CreateRectRgn(pos.x, pos.y - m_scrollY, pos.x + pos.width, pos.y + pos.height - m_scrollY);
-    ::SelectClipRgn((HDC)0, NULL); // 占位——实际 DC 在 draw 时传入
-    m_clipStack.push_back(hRgn);
+    if (m_hDrawDC == NULL) return;
+    // 文档坐标 → 窗口坐标（减去滚动偏移）
+    HRGN hRgn = ::CreateRectRgn(pos.x, pos.y - m_scrollY,
+                                pos.x + pos.width, pos.y + pos.height - m_scrollY);
+    if (hRgn) {
+        ::SelectClipRgn(m_hDrawDC, hRgn);
+        m_clipStack.push_back(hRgn);   // 区域交给栈管理，del_clip 时恢复并删除
+    }
 }
 
 void CDuiHtmlContainer::del_clip()
 {
+    if (m_hDrawDC == NULL) return;
+    ::SelectClipRgn(m_hDrawDC, NULL);   // 解除裁剪
     if (!m_clipStack.empty()) {
         HRGN hRgn = m_clipStack.back();
         if (hRgn) ::DeleteObject(hRgn);
@@ -561,7 +602,146 @@ void CDuiHtmlContainer::get_client_rect(litehtml::position& client) const
 
 litehtml::element::ptr CDuiHtmlContainer::create_element(const char* tag_name, const litehtml::string_map& attributes, const std::shared_ptr<litehtml::document>& doc)
 {
-    return nullptr;   // 使用 litehtml 默认元素
+    // 表单控件交给 CHtmlFormElement（litehtml 自身不实现）
+    if (tag_name != NULL) {
+        if (!strcmp(tag_name, "input") ||
+            !strcmp(tag_name, "select") ||
+            !strcmp(tag_name, "button") ||
+            !strcmp(tag_name, "textarea"))
+        {
+            return std::make_shared<CHtmlFormElement>(doc);
+        }
+    }
+    return nullptr;   // 其余使用 litehtml 默认元素
+}
+
+HFONT CDuiHtmlContainer::GetRealFont(litehtml::uint_ptr hFont)
+{
+    return GetFontFromCache((int)hFont);
+}
+
+// ============================ 表单支持 ============================
+
+// 递归收集文档树中的表单控件
+static void CollectFormElements(const litehtml::element::ptr& el, std::vector<CHtmlFormElement*>& out)
+{
+    if (!el) return;
+    CHtmlFormElement* pForm = dynamic_cast<CHtmlFormElement*>(el.get());
+    if (pForm != NULL) out.push_back(pForm);
+    const litehtml::elements_list& children = el->children();
+    for (auto it = children.begin(); it != children.end(); ++it) {
+        CollectFormElements(*it, out);
+    }
+}
+
+CHtmlFormElement* CDuiHtmlContainer::FindFormElement(LPCTSTR name)
+{
+    if (!m_doc || name == NULL) return NULL;
+
+    std::vector<CHtmlFormElement*> list;
+    CollectFormElements(m_doc->root(), list);
+
+    char* pName = DuiW2Utf8(name);
+    if (pName == NULL) return NULL;
+
+    CHtmlFormElement* pFound = NULL;
+    for (size_t i = 0; i < list.size(); i++) {
+        if (list[i]->GetFormName() == pName) {
+            pFound = list[i];
+            break;
+        }
+    }
+    delete[] pName;
+    return pFound;
+}
+
+// 递归查找命中的表单控件（按文档坐标）
+static CHtmlFormElement* HitTestFormRec(const litehtml::element::ptr& el, int x, int y)
+{
+    if (!el) return NULL;
+
+    CHtmlFormElement* pForm = dynamic_cast<CHtmlFormElement*>(el.get());
+    if (pForm != NULL) {
+        litehtml::position pos = el->get_placement();
+        if (x >= pos.x && x < pos.x + pos.width && y >= pos.y && y < pos.y + pos.height) {
+            return pForm;
+        }
+    }
+
+    const litehtml::elements_list& children = el->children();
+    for (auto it = children.begin(); it != children.end(); ++it) {
+        CHtmlFormElement* p = HitTestFormRec(*it, x, y);
+        if (p != NULL) return p;
+    }
+    return NULL;
+}
+
+CHtmlFormElement* CDuiHtmlContainer::HitTestForm(int x, int y)
+{
+    if (!m_doc) return NULL;
+    return HitTestFormRec(m_doc->root(), x, y);
+}
+
+void CDuiHtmlContainer::SetFocusedForm(CHtmlFormElement* pEl)
+{
+    if (m_pFocusedForm == pEl) return;
+    m_pFocusedForm = pEl;
+}
+
+void CDuiHtmlContainer::OnFormSubmit(CHtmlFormElement* pEl)
+{
+    if (m_fnFormSubmit) m_fnFormSubmit(pEl);
+}
+
+void CDuiHtmlContainer::OnFormChanged(CHtmlFormElement* pEl)
+{
+    if (m_fnFormChanged) m_fnFormChanged(pEl);
+}
+
+bool CDuiHtmlContainer::InputChar(wchar_t ch)
+{
+    if (m_pFocusedForm == NULL) return false;
+    if (!m_pFocusedForm->IsEditable()) return false;
+
+    // 退格 / 回车由 InputKeyDown 处理，这里只处理可见字符
+    if (ch < 32) return false;
+
+    m_pFocusedForm->InsertChar(ch);
+    if (m_fnFormChanged) m_fnFormChanged(m_pFocusedForm);
+    return true;
+}
+
+bool CDuiHtmlContainer::InputKeyDown(int vkCode)
+{
+    if (m_pFocusedForm == NULL) return false;
+    if (!m_pFocusedForm->IsEditable()) return false;
+
+    switch (vkCode)
+    {
+    case VK_BACK:
+        m_pFocusedForm->Backspace();
+        break;
+    case VK_DELETE:
+        m_pFocusedForm->DeleteChar();
+        break;
+    case VK_LEFT:
+        m_pFocusedForm->SetCaretPos(m_pFocusedForm->GetCaretPos() - 1);
+        break;
+    case VK_RIGHT:
+        m_pFocusedForm->SetCaretPos(m_pFocusedForm->GetCaretPos() + 1);
+        break;
+    case VK_HOME:
+        m_pFocusedForm->SetCaretPos(0);
+        break;
+    case VK_END:
+        m_pFocusedForm->SetCaretPos(1 << 20);   // 内部会夹到末尾
+        break;
+    default:
+        return false;
+    }
+
+    if (m_fnFormChanged) m_fnFormChanged(m_pFocusedForm);
+    return true;
 }
 
 void CDuiHtmlContainer::get_media_features(litehtml::media_features& media) const

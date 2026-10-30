@@ -1,0 +1,58 @@
+# 编译中间产物
+*.obj
+*.pdb
+*.idb
+*.ilk
+*.pch
+*.ipch
+*.log
+*.tlog
+*.lastbuildstate
+*.unsuccessfulbuild
+*.exe.tmp
+ipch/
+Temp/
+TempTest/
+[Dd]ebug/
+[Rr]elease/
+[Ss]Debug/
+[Ss]Release/
+[Ss]DebugA/
+[Ss]ReleaseA/
+[Dd]ebugA/
+[Rr]eleaseA/
+x64/
+Win32/
+
+# 库与二进制产物（按需保留源码）
+Lib/litehtml/
+Lib/*.lib
+Lib/*.exp
+Lib/*.dll
+DuiLib/Lib/
+DuiLib/Bin/
+bin/*.dll
+bin/*.pdb
+HtmlDemo/bin/
+ControlDemo/bin/
+
+# 构建日志
+b*.txt
+bc*.txt
+bl_*.txt
+bcd.txt
+
+# 用户特定文件
+*.user
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+.vs/
+
+# 调试临时文件
+C:/dlg_trace.txt
+C:/dbg2.txt
+demo_log.txt
+*.map

@@ -69,10 +69,10 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E106ACD7-4E53-4AEE-942B-D0DD426DB34E}</ProjectGuid>
     <RootNamespace>DuiLib</RootNamespace>
-    <!-- Óë¸÷ Demo ¹¤³Ì±£³ÖÒ»ÖÂ£»WebView2 ´úÂëÐè VS2015+£¨v140+£©¹¤¾ß¼¯£¬ÀÏ¹¤¾ß¼¯£¨v100/VS2010£©»á
-         Òò DUILIB_USE_WEBVIEW2 ×Ô¶¯¹Ø±Õ¶ø»ØÍËµ½ WebBrowser/IE Â·¾¶£¨¼û UIWebBrowser.h£© -->
+    <!-- ï¿½ï¿½ï¿½ Demo ï¿½ï¿½ï¿½Ì±ï¿½ï¿½ï¿½Ò»ï¿½Â£ï¿½WebView2 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ VS2015+ï¿½ï¿½v140+ï¿½ï¿½ï¿½ï¿½ï¿½ß¼ï¿½ï¿½ï¿½ï¿½Ï¹ï¿½ï¿½ß¼ï¿½ï¿½ï¿½v100/VS2010ï¿½ï¿½ï¿½ï¿½
+         ï¿½ï¿½ DUILIB_USE_WEBVIEW2 ï¿½Ô¶ï¿½ï¿½Ø±Õ¶ï¿½ï¿½ï¿½ï¿½Ëµï¿½ WebBrowser/IE Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ UIWebBrowser.hï¿½ï¿½ -->
     <PlatformToolset>v100</PlatformToolset>
-    <!-- ¹Ì¶¨ÏÖ´ú Windows SDK£¨ÀÏ SDK v7.0A ÎÞ·¨±àÒë WebView2 Í·ÎÄ¼þ£© -->
+    <!-- ï¿½Ì¶ï¿½ï¿½Ö´ï¿½ Windows SDKï¿½ï¿½ï¿½ï¿½ SDK v7.0A ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ WebView2 Í·ï¿½Ä¼ï¿½ï¿½ï¿½ -->
     <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -679,6 +679,8 @@
       <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
       <ImportLibrary>$(ProjectDir)..\Lib\litehtml\$(ProjectName).lib</ImportLibrary>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Lib\litehtml;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>litehtml_Release_Win32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -715,6 +717,8 @@
       <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
       <ImportLibrary>$(ProjectDir)..\Lib\litehtml\$(ProjectName).lib</ImportLibrary>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Lib\litehtml;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>litehtml_Release_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -945,6 +949,7 @@
     <ClCompile Include="Control\UILoading.cpp" />
     <ClCompile Include="Control\UIPageControl.cpp" />
     <ClCompile Include="Control\UIDuiHtmlContainer.cpp" />
+    <ClCompile Include="Control\UIDuiHtmlForm.cpp" />
     <ClCompile Include="Control\UIHtmlBox.cpp" />
     <ClCompile Include="Control\UIRollText.cpp" />
     <ClCompile Include="Control\UIAnimation.cpp" />
@@ -1040,6 +1045,7 @@
     <ClInclude Include="Control\UILoading.h" />
     <ClInclude Include="Control\UIPageControl.h" />
     <ClInclude Include="Control\UIDuiHtmlContainer.h" />
+    <ClInclude Include="Control\UIDuiHtmlForm.h" />
     <ClInclude Include="Control\UIHtmlBox.h" />
     <ClInclude Include="Control\UIRollText.h" />
     <ClInclude Include="Control\UIAnimation.h" />
