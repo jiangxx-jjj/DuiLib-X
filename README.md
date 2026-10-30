@@ -43,12 +43,26 @@ msbuild 3rd\litehtml\litehtml.vcxproj /p:Configuration=SRelease /p:Platform=Win3
 :: 2. 编译 DuiLib 主库
 msbuild DuiLib\DuiLib.vcxproj /p:Configuration=SRelease /p:Platform=Win32 /p:PlatformToolset=v143
 
-:: 3. 编译示例
+:: 3. ★关键★ 同步静态库（否则 msbuild 判定 exe 最新会跳过链接，改了源码"毫无效果"）
+copy /Y DuiLib\Lib\DuiLib.lib Lib\SRelease_Win32.lib
+
+:: 4. 编译示例
 msbuild ControlDemo\ControlDemo.vcxproj /p:Configuration=SRelease /p:Platform=Win32 /p:PlatformToolset=v143
 msbuild HtmlDemo\HtmlDemo.vcxproj /p:Configuration=SRelease /p:Platform=Win32 /p:PlatformToolset=v143
 ```
 
 要求：Visual Studio 2022（v143 工具集）、Windows SDK 10.0.19041.0
+
+> 六个配置（`SRelease`/`SDebug`/`Release` × `Win32`/`x64`）均已验证编译通过。
+> `Release` 为 DLL 配置（`UILIB_EXPORTS`），其余为静态库配置。
+
+### 自测
+
+```bat
+msbuild HtmlDemo\HtmlFormTest.vcxproj /p:Configuration=SRelease /p:Platform=Win32
+HtmlDemo\bin\HtmlFormTest.exe
+:: 输出 25 项断言（表单查找/读写/勾选/中英文输入/退格），全 PASS
+```
 
 ### 运行示例
 
