@@ -98,8 +98,30 @@ void style::add_property(string_id name, const string& val, const string& baseur
 
 	switch (name)
 	{
-	// keyword-only properties
+	// grid：litehtml 没有实现 CSS Grid，这里做降级处理——
+	// display:grid 当作 display:flex + flex-wrap:wrap，grid-template-columns 的列数
+	// 记录到 m_grid_columns，由 compute_flex 给子项注入等宽（见下方实现）。
 	case _display_:
+	{
+		string low = val;
+		lcase(low);
+		trim(low);
+		if (low == "grid" || low == "inline-grid")
+		{
+			add_parsed_property(_display_, property_value((int)display_flex, important));
+			// 默认换行（grid 天然多行）
+			add_parsed_property(_flex_wrap_, property_value((int)flex_wrap_wrap, important));
+			break;
+		}
+		idx = value_index(val, m_valid_values[name]);
+		if (idx >= 0)
+		{
+			add_parsed_property(name, property_value(idx, important));
+		}
+		break;
+	}
+
+	// keyword-only properties
 	case _visibility_:
 	case _position_:
 	case _float_:
@@ -538,6 +560,77 @@ void style::add_property(string_id name, const string& val, const string& baseur
 		length.fromString(val, flex_basis_strings, -1);
 		add_parsed_property(_flex_basis_, property_value(length, important));
 		break;
+
+	// gap: <row-gap> <column-gap>（1 个值时两者相同）
+	case _gap_:
+	{
+		string_vector tokens;
+		split_string(val, tokens, " ");
+		if (!tokens.empty())
+		{
+			css_length rg, cg;
+			rg.fromString(tokens[0], "normal", -1);
+			if (tokens.size() >= 2) cg.fromString(tokens[1], "normal", -1);
+			else                   cg = rg;
+			add_parsed_property(_row_gap_,    property_value(rg, important));
+			add_parsed_property(_column_gap_, property_value(cg, important));
+		}
+		break;
+	}
+	case _row_gap_:
+		length.fromString(val, "normal", -1);
+		add_parsed_property(_row_gap_, property_value(length, important));
+		break;
+	case _column_gap_:
+		length.fromString(val, "normal", -1);
+		add_parsed_property(_column_gap_, property_value(length, important));
+		break;
+
+	// grid-template-columns：只统计列数（repeat(n,1fr) 或若干 1fr/px 值），
+	// 供 grid 降级布局给子项分配等宽。非等宽模板按最大列数近似。
+	case _grid_template_columns_:
+	case _grid_template_rows_:
+	{
+		string low = val;
+		lcase(low);
+		trim(low);
+
+		int cols = 0;
+		size_t rp = low.find("repeat(");
+		if (rp != string::npos)
+		{
+			// repeat(N, ...) / repeat(auto-fit|auto-fill, ...)
+			size_t comma = low.find(',', rp);
+			if (comma != string::npos)
+			{
+				string cnt = low.substr(rp + 7, comma - rp - 7);
+				trim(cnt);
+				int n = atoi(cnt.c_str());
+				if (n <= 0) n = 1;                       // auto-fit/auto-fill 先按 1 处理
+				if (n > 12) n = 12;                      // 上限保护
+				cols = n;
+			}
+		}
+		if (cols == 0)
+		{
+			// 逐个 token 计数（跳过 repeat 内部的内容）
+			string_vector tokens;
+			split_string(low, tokens, " ");
+			for (const auto& tok : tokens)
+			{
+				if (tok.empty()) continue;
+				if (tok.find("repeat(") != string::npos) continue;
+				cols++;
+			}
+		}
+		if (cols > 0)
+		{
+			css_length n;
+			n.set_value((float)cols, css_units_none);
+			add_parsed_property(name, property_value(n, important));
+		}
+		break;
+	}
 
 	case _order_: // <integer>
 		{

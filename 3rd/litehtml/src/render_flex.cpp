@@ -95,6 +95,12 @@ int litehtml::render_item_flex::_render_content(int x, int y, bool second_pass, 
 	{
 		container_main_size = sum_main_size;
 	}
+	// gap 的交叉轴间距也要计入占用高度（多行时相邻行之间）
+	int cross_gap = (is_row_direction ? css().get_row_gap() : css().get_column_gap());
+	if(cross_gap > 0 && m_lines.size() > 1)
+	{
+		sum_cross_size += cross_gap * ((int)m_lines.size() - 1);
+	}
 
 	/////////////////////////////////////////////////////////////////
 	/// Calculate free cross size
@@ -213,6 +219,16 @@ int litehtml::render_item_flex::_render_content(int x, int y, bool second_pass, 
 		ln.cross_start = line_pos;
 		line_pos += ln.cross_size + add_after_line;
 	}
+	// gap 的交叉轴间距：多行 flex 时，相邻行之间加上 cross_gap
+	if(m_lines.size() > 1 && cross_gap > 0)
+	{
+		int add = 0;
+		for(auto &ln : m_lines)
+		{
+			ln.cross_start += add;
+			add += cross_gap;
+		}
+	}
 
 	/// Fix justify-content property
 	flex_justify_content justify_content = css().get_flex_justify_content();
@@ -262,6 +278,9 @@ std::list<litehtml::flex_line> litehtml::render_item_flex::get_lines(const liteh
 
 	std::list<flex_line> lines;
 	flex_line line(reverse_main, reverse_cross);
+	// 主轴间距：row 方向用 column-gap，column 方向用 row-gap
+	line.main_gap = is_row_direction ? css().get_column_gap() : css().get_row_gap();
+	line.cross_gap = is_row_direction ? css().get_row_gap() : css().get_column_gap();
 	std::list<std::shared_ptr<flex_item>> items;
 	int src_order = 0;
 	bool sort_required = false;
@@ -278,6 +297,25 @@ std::list<litehtml::flex_line> litehtml::render_item_flex::get_lines(const liteh
 			item = std::make_shared<flex_item_column_direction>(el);
 		}
 		item->init(self_size, fmt_ctx, css().get_flex_align_items());
+
+		// grid 降级：按 grid-template-columns 的列数给子项固定等宽
+		// （CSS Grid 的 grid-template-columns: repeat(3, 1fr) 等价于 flex 子项各占 1/3）
+		if(is_row_direction && css().get_grid_columns() > 0)
+		{
+			int cols = css().get_grid_columns();
+			int gap = css().get_column_gap();
+			int avail = self_size.render_width - gap * (cols - 1);
+			if(avail > 0)
+			{
+				int w = avail / cols;
+				if(w > 0)
+				{
+					item->base_size = w;
+					item->main_size = w;
+					item->min_size = 0;
+				}
+			}
+		}
 		item->src_order = src_order++;
 
 		if(prev_order.is_default())
@@ -311,6 +349,13 @@ std::list<litehtml::flex_line> litehtml::render_item_flex::get_lines(const liteh
 		{
 			lines.emplace_back(line);
 			line = flex_line(reverse_main, reverse_cross);
+			line.main_gap = is_row_direction ? css().get_column_gap() : css().get_row_gap();
+			line.cross_gap = is_row_direction ? css().get_row_gap() : css().get_column_gap();
+		}
+		// gap：同一行内后续 item 计入主轴间距，用于换行判断
+		if(!line.items.empty())
+		{
+			line.base_size += line.main_gap;
 		}
 		line.base_size += item->base_size;
 		line.total_grow += item->grow;

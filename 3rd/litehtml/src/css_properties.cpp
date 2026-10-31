@@ -401,6 +401,17 @@ void litehtml::css_properties::compute_flex(const element* el, const document::p
 		m_flex_justify_content = (flex_justify_content) el->get_enum_property(_justify_content_, false, flex_justify_content_flex_start, offset(m_flex_justify_content));
 		m_flex_align_items = (flex_align_items) el->get_enum_property(_align_items_, false, flex_align_items_flex_normal, offset(m_flex_align_items));
 		m_flex_align_content = (flex_align_content) el->get_enum_property(_align_content_, false, flex_align_content_stretch, offset(m_flex_align_content));
+
+		// gap / row-gap / column-gap：换算成像素，供 flex 排版分配间距
+		m_row_gap = el->get_length_property(_row_gap_, false, css_length::predef_value(0), offset(m_row_gap));
+		m_column_gap = el->get_length_property(_column_gap_, false, css_length::predef_value(0), offset(m_column_gap));
+		doc->cvt_units(m_row_gap, get_font_size());
+		doc->cvt_units(m_column_gap, get_font_size());
+
+		// grid 降级：grid-template-columns 的列数 → m_grid_columns（供子项等宽分配）
+		const css_length& gc = el->get_length_property(_grid_template_columns_, false,
+		                                              css_length::predef_value(0), offset(m_grid_columns));
+		m_grid_columns = gc.is_predefined() ? 0 : (int)gc.val();
 	}
 	m_flex_align_self = (flex_align_items) el->get_enum_property(_align_self_, false, flex_align_items_auto, offset(m_flex_align_self));
 	auto parent = el->parent();

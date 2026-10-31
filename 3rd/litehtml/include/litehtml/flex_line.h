@@ -19,6 +19,8 @@ namespace litehtml
 		int total_shrink;
 		int num_auto_margin_main_start;		// number of items with auto margin left/top
 		int num_auto_margin_main_end;		// number of items with auto margin right/bottom
+		int main_gap;						// 主轴方向的 item 间距（CSS gap，已换算像素）
+		int cross_gap;						// 交叉轴方向的间距（多行 flex 的行间距）
 		baseline first_baseline;
 		baseline last_baseline;
 		bool reverse_main;
@@ -33,6 +35,8 @@ namespace litehtml
 				main_size(0),
 				num_auto_margin_main_start(0),
 				num_auto_margin_main_end(0),
+				main_gap(0),
+				cross_gap(0),
 				first_baseline(),
 				last_baseline(),
 				reverse_main(_reverse_main),

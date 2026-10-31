@@ -226,7 +226,9 @@ void litehtml::flex_line::init(int container_main_size, bool fit_container, bool
 
 	if(!fit_container)
 	{
-		distribute_free_space(container_main_size);
+		// gap 会占用主轴空间：从可用空间里扣除，再分配 flex 伸缩量
+		int gap_space = (items.size() > 1) ? main_gap * ((int)items.size() - 1) : 0;
+		distribute_free_space(container_main_size - gap_space);
 	}
 
 	if(is_row_direction)
@@ -356,6 +358,9 @@ int litehtml::flex_line::calculate_items_position(int container_main_size,
 	int free_main_size = container_main_size - main_size;
 	distribute_main_auto_margins(free_main_size);
 	free_main_size = container_main_size - main_size;
+	// 扣除 gap 占用的空间后，剩下的才是 justify-content 可分配的空闲空间
+	int gap_space = (items.size() > 1) ? main_gap * ((int)items.size() - 1) : 0;
+	free_main_size -= gap_space;
 
 	/// Fix justify-content property
 	switch (justify_content)
@@ -433,6 +438,7 @@ int litehtml::flex_line::calculate_items_position(int container_main_size,
 
 	/// Place all items in main and cross positions
 	int height =  0;
+	bool firstItem = true;
 	for(auto &item : items)
 	{
 		main_pos += add_before_item;
@@ -441,6 +447,9 @@ int litehtml::flex_line::calculate_items_position(int container_main_size,
 			main_pos++;
 			item_remainder--;
 		}
+		// gap：相邻 item 之间插入主轴间距（第一个 item 前不加）
+		if(!firstItem) main_pos += main_gap;
+		firstItem = false;
 		item->place(*this, main_pos, self_size, fmt_ctx);
 		main_pos += item->get_el_main_size() + add_after_item;
 		if(add_after_item > 0 && item_remainder > 0)

@@ -94,6 +94,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',s
 .hdr-r{display:flex;align-items:center;gap:8px;background:var(--accent-bg);padding:6px 13px;
   border-radius:20px;font-size:11px;color:var(--accent);font-weight:600;flex-shrink:0}
 .hdr-r .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+
+/* ============ 窗口按键（右上角 最小化/最大化/关闭） ============ */
+.win-btns{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.win-btn{width:30px;height:26px;display:inline-flex;align-items:center;justify-content:center;
+  border-radius:8px;cursor:pointer;color:var(--ts);transition:.18s var(--ease);
+  user-select:none;border:none;background:transparent;font-family:inherit;
+  font-size:13px;line-height:1;padding:0}
+.win-btn:hover{background:var(--accent-bg);color:var(--text)}
+.win-btn.close:hover{background:var(--danger);color:#fff}
+
 .ct{flex:1;padding:22px 26px;overflow-y:auto}
 .pg{display:none;animation:fi .3s var(--ease-out)}
 .pg.on{display:block}
@@ -521,6 +531,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',s
 <main class="main">
   <div class="hdr">
     <div class="hdr-l"><span class="hdr-title" id="pageTitle">首页</span><!-- <span class="hdr-sub" id="pageSub"></span> --></div>
+    <!-- 右上角 3 个窗口按键：点击后通过 name 通知后端（HtmlDemo.cpp 处理最小化/最大化/关闭） -->
+    <div class="win-btns">
+      <button class="win-btn" name="win_min" title="最小化">&#8211;</button>
+      <button class="win-btn" name="win_max" title="最大化">&#9744;</button>
+      <button class="win-btn close" name="win_close" title="关闭">&#10005;</button>
+    </div>
   </div>
   <div class="ct">
 

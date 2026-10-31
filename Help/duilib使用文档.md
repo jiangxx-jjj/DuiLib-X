@@ -1015,7 +1015,99 @@ XML 写法等价：
 | `canvas` | ✅ GDI+ 内存位图 + JS 绘图 API（`canvas_clear/fill_rect/draw_rect/draw_line/draw_circle/draw_text`） |
 | `audio` | ✅ Win32 MCI 播放本地 mp3/wav，自绘播放/暂停按钮 + 进度条 |
 | `iframe` | ✅ 内嵌本地 HTML 子文档渲染 |
-| `svg` | ✅ rect/circle/line/text 基本形状递归渲染 |
+| `svg` | ✅ 完整矢量渲染，详见 14.5.1 |
+
+#### 14.5.1 SVG 图标支持
+
+`<svg>` 采用自绘矢量渲染（GDI+ `GraphicsPath`），不依赖任何浏览器内核，可直接
+使用 Material Icons / Feather 这类图标库的 `path d` 数据。
+
+**支持的 SVG 元素**
+
+| 元素 | 说明 |
+|---|---|
+| `svg` | 根节点，支持 `viewBox`（等比缩放居中）、`width`/`height` 属性与 CSS 尺寸 |
+| `path` | `d` 属性完整解析，见下方命令表 |
+| `rect` | `x` `y` `width` `height` `rx`（圆角） |
+| `circle` / `ellipse` | `cx` `cy` `r` / `rx` `ry` |
+| `line` | `x1` `y1` `x2` `y2` |
+| `polyline` / `polygon` | `points` |
+| `g` | 分组，`fill`/`stroke` 向子元素继承 |
+| `text` | `x` `y` `font-size` |
+| `defs` / `linearGradient` / `stop` | 渐变定义，通过 `fill="url(#id)"` 引用 |
+| `animateTransform` / `animate` / `title` / `desc` | 识别但跳过（不参与绘制） |
+
+**`path` 命令支持**
+
+| 命令 | 含义 | 说明 |
+|---|---|---|
+| `M` `m` | 移动到 | 之后的多余坐标按 `L` 处理（符合 SVG 规范） |
+| `L` `l` `H` `h` `V` `v` | 直线 | 支持紧凑写法如 `M10 20v-6h4v6` |
+| `C` `c` | 三次贝塞尔 | |
+| `S` `s` | 平滑三次贝塞尔 | 第一控制点按上一段自动反射 |
+| `Q` `q` | 二次贝塞尔 | 内部转换为三次贝塞尔 |
+| `T` `t` | 平滑二次贝塞尔 | 控制点自动反射 |
+| `A` `a` | 椭圆弧 | 按 SVG 规范 F.6.5 做端点参数 → 中心参数换算，再按 ≤90° 分段用三次贝塞尔逼近 |
+| `Z` `z` | 闭合路径 | |
+
+> **数字解析细节**：SVG 允许 `1.41-1.41` 这种省略分隔符的紧凑写法，
+> 也允许 `A6.47 6.47 0 0016 9.5` 里标志位与坐标紧贴。
+> 解析器对小数的处理是「小数点最多出现一次」，并单独解析 `large-arc-flag`/`sweep-flag`
+> 这两个只能是 `0`/`1` 的位，否则整条路径的坐标会错位成畸形图形。
+
+**样式属性**
+
+| 属性 | 说明 |
+|---|---|
+| `fill` | 颜色 / `none` / `currentColor` / `url(#渐变id)` |
+| `stroke` / `stroke-width` | 描边颜色与线宽（随 viewBox 缩放） |
+| `stroke-dasharray` / `stroke-linecap` | 虚线、线端样式（`round`/`square`） |
+| `opacity` / `fill-opacity` / `stroke-opacity` | 透明度，逐层累积 |
+| `transform` | `translate` `scale` `rotate`（含 `rotate(a cx cy)`）`matrix` `skewX` `skewY` |
+
+**颜色继承规则**
+
+```css
+/* 推荐写法：CSS 控制图标颜色 */
+.ni svg   { width: 17px; height: 17px; fill: currentColor; }
+.ni       { color: #5B7CFA; }
+.hero svg { fill: var(--accent); }        /* 也支持 CSS 变量 */
+```
+
+继承链：`path` 自身的 `fill` 属性 → 父元素 `fill` 属性 → CSS `fill`（含 `var()` 展开）
+→ `currentColor` 取元素 `color`。写在 HTML 属性上的 `var(--x)` 也会被展开
+（litehtml 只对 CSS 声明做变量替换，属性值需自行处理）。
+
+**示例**
+
+```html
+<!-- 导航图标：颜色跟随文字色 -->
+<div class="ni"><svg viewBox="0 0 24 24">
+  <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+</svg><span>首页</span></div>
+
+<!-- 渐变盾牌：多层叠加 + 透明度 -->
+<svg viewBox="0 0 100 100" width="108" height="108">
+  <defs><linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color:#5b7cfa"/>
+    <stop offset="100%" style="stop-color:#0B0E27"/>
+  </linearGradient></defs>
+  <path d="M50 8L12 24v24c0 22.5 15.8 43.5 38 48 22.2-4.5 38-25.5 38-48V24L50 8z"
+        fill="url(#sg)" opacity=".25"/>
+  <path d="M42.5 50.5l-6-6 3-3 3 3 10-10 3 3-13 13z" fill="#fff"/>
+</svg>
+
+<!-- 环形进度：描边 + 虚线 + 旋转 -->
+<svg viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="44" fill="none" stroke="#DDE3EE" stroke-width="5"/>
+  <circle cx="50" cy="50" r="44" fill="none" stroke="#5B7CFA" stroke-width="5"
+          stroke-dasharray="70 206" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+</svg>
+```
+
+**未支持**：`<use>`、`<clipPath>`、`<mask>`、`<radialGradient>`、`<pattern>`、
+`<filter>`、SVG 动画（`<animate>` 只识别不播放）。图标场景（path + 单色/线性渐变）
+覆盖完整。
 | `video` / `embed` / `object` | 降级占位（灰底虚线框，不崩不乱版） |
 
 ### 14.6 支持的 CSS3 属性
@@ -1024,7 +1116,7 @@ XML 写法等价：
 
 | 属性 | 支持的值 |
 |---|---|
-| `display` | `none` `block` `inline` `inline-block` `flex` `inline-flex` `list-item` `table` `table-row` `table-cell` `table-row-group` |
+| `display` | `none` `block` `inline` `inline-block` `flex` `inline-flex` `list-item` `table` `table-row` `table-cell` `table-row-group` `grid` `inline-grid`（`grid` 为降级实现，见 14.6.1） |
 | `position` | `static` `relative` `absolute` `fixed` |
 | `top` / `right` / `bottom` / `left` | `px` `%` `em` `rem` `auto` |
 | `float` / `clear` | `left` `right` `none` / `left` `right` `both` |
@@ -1036,7 +1128,12 @@ XML 写法等价：
 #### 尺寸
 
 `width` `height` `min-width` `min-height` `max-width` `max-height`
-—— 支持 `px` `%` `em` `rem` `pt` `vw` `vh` `auto`。
+—— 支持 `px` `%` `em` `rem` `pt` `vw` `vh` `ch` `auto`。
+
+> **`ch` 单位**：`ch` 表示「一个 `0` 字符的宽度」。litehtml 原始单位表里没有 `ch`，
+> 会被误判成无单位数值，导致 `max-width: 52ch` 这类写法算出 52px，
+> 文字被挤成一列竖排。本仓库在 `3rd/litehtml/src/css_length.cpp` 里补了映射：
+> `1ch ≈ 0.5em`（数字字宽约为字号的一半），转为 `em` 后再按字号换算成像素。
 
 #### 盒模型
 
@@ -1116,7 +1213,42 @@ box-shadow: inset 0 1px 0 #fff;                          /* 内阴影（解析�
 | `align-items` / `align-self` | `stretch` `flex-start` `flex-end` `center` `baseline` |
 | `flex-grow` / `flex-shrink` / `flex-basis` | 数值 / 长度 |
 | `flex` | 简写 `1` / `1 1 auto` / `none` / `auto` |
-| `gap` / `row-gap` / `column-gap` | 子项间距 |
+| `gap` / `row-gap` / `column-gap` | 子项间距（主轴 + 多行交叉轴都生效） |
+
+#### 14.6.1 Grid 布局（降级实现）
+
+litehtml 本身没有实现 CSS Grid。为了让现有网页（大量使用 `display:grid`）能正常显示，
+本仓库在 `style.cpp` 里做了降级映射：
+
+| 网页写法 | 实际行为 |
+|---|---|
+| `display:grid` / `display:inline-grid` | 自动转成 `display:flex` + `flex-wrap:wrap` |
+| `grid-template-columns:repeat(3,1fr)` | 解析出列数 3，每个子项固定为可用宽度 1/3 |
+| `grid-template-columns:1fr 1fr` | 解析出列数 2，等宽 |
+| `gap` | 作为 flex 的 `gap` 生效（含行间距） |
+
+```css
+/* 网页里常见的三列卡片 */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+```
+
+> 限制：不支持跨列 `grid-column: span 2`、`grid-area`、`auto-fit` 自动列数（按 1 列处理）。
+> 如果布局要求严格，建议直接用 flex 写。
+
+#### 14.6.2 不支持 / 仅解析不生效的属性
+
+以下属性会被 CSS 解析器接受（不会导致整条规则失效），但当前不做绘制：
+
+| 属性 | 现状 |
+|---|---|
+| `transform` / `transition` / `animation` | 解析但不应用（`transition` 无动画，`transform` 不改变位置） |
+| `filter` | 解析但不应用 |
+| `box-shadow` 的 `inset` | 按外阴影绘制 |
+| `grid-column` / `grid-row` / `grid-area` | 忽略 |
+| `flex-direction: column` 下的 `gap` 行间距 | 支持主轴间距，多行交叉轴间距有限 |
+
+> 这与文档前面「CSS3 全支持」的表述并不矛盾：**解析层不丢规则**，
+> 让网页整体样式不会因为一两个新属性而崩掉；绘制层按能力实现。
 
 #### 列表与表格
 

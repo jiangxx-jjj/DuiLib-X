@@ -288,6 +288,15 @@ STRING_ID(
 	_flex_shrink_,
 	_flex_basis_,
 
+	// flex/grid 间距（gap: <row-gap> <column-gap>）
+	_gap_,
+	_row_gap_,
+	_column_gap_,
+
+	// grid（简化支持：仅解析列定义，布局降级为等宽 flex-wrap）
+	_grid_template_columns_,
+	_grid_template_rows_,
+
 	_caption_side_,
 	_order_,
 

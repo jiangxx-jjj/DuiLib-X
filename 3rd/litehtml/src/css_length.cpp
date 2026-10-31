@@ -1,4 +1,4 @@
-#include "html.h"
+﻿#include "html.h"
 #include "css_length.h"
 
 void litehtml::css_length::fromString( const string& str, const string& predefs, int defValue )
@@ -44,6 +44,14 @@ void litehtml::css_length::fromString( const string& str, const string& predefs,
 		{
 			m_value = t_strtof(num);
 			m_units	= (css_units) value_index(un, css_units_strings, css_units_none);
+			// ch 单位（"0" 字符宽度）在 css_units_strings 中不存在，
+			// 会被解析成 css_units_none 导致后续按 px 处理出错。
+			// 近似：1ch ≈ 0.5em（数字字宽约为字号一半），转换为 em 处理。
+			if(un == "ch")
+			{
+				m_value *= 0.5f;
+				m_units = css_units_em;
+			}
 		} else
 		{
 			// not a number so it is predefined

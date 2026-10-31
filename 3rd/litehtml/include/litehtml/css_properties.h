@@ -69,6 +69,9 @@ namespace litehtml
 		flex_align_items		m_flex_align_items;
 		flex_align_items		m_flex_align_self;
 		flex_align_content		m_flex_align_content;
+		css_length				m_row_gap;		// gap 的纵向间距（默认 auto = 0）
+		css_length				m_column_gap;	// gap 的横向间距（默认 auto = 0）
+		int						m_grid_columns;	// grid-template-columns 的列数（grid 降级布局用）
 
 		caption_side			m_caption_side;
 
@@ -123,6 +126,9 @@ namespace litehtml
 				m_flex_align_items(flex_align_items_stretch),
 				m_flex_align_self(flex_align_items_auto),
 				m_flex_align_content(flex_align_content_stretch),
+				m_row_gap(),
+				m_column_gap(),
+				m_grid_columns(0),
 				m_order(0)
 		{}
 
@@ -255,6 +261,10 @@ namespace litehtml
 		flex_align_items get_flex_align_items() const;
 		flex_align_items get_flex_align_self() const;
 		flex_align_content get_flex_align_content() const;
+		// flex/grid 间距（已换算为像素）
+		int get_row_gap() const { return m_row_gap.is_predefined() ? 0 : (int)m_row_gap.val(); }
+		int get_column_gap() const { return m_column_gap.is_predefined() ? 0 : (int)m_column_gap.val(); }
+		int get_grid_columns() const { return m_grid_columns; }
 
 		int get_order() const;
 		void set_order(int order);
