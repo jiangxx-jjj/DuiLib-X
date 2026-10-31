@@ -1,5 +1,6 @@
 ﻿#include "StdAfx.h"
 #include "UIHtmlBox.h"
+#include "litehtml/el_form.h"
 #include "litehtml.h"
 
 #pragma comment(lib, "msimg32.lib")
@@ -181,39 +182,76 @@ void CHtmlBoxUI::SetBasePath(LPCTSTR path)
 }
 
 // ============================ 表单读写 ============================
-// TODO: 阶段 3 实现 litehtml 表单交互
+// 按 name 属性全局查找控件，读写值
 
 CDuiString CHtmlBoxUI::GetValue(LPCTSTR name)
 {
-    // TODO: litehtml 版实现
+    if (!m_container || !m_liteDoc) return _T("");
+    std::string utf8Name = DuiWToUtf8(name);
+    auto found = m_container->FindControlsByName(m_liteDoc->root(), utf8Name);
+    for (auto& el : found) {
+        litehtml::el_form_control* pCtrl = dynamic_cast<litehtml::el_form_control*>(el.get());
+        if (pCtrl) return Utf8ToDuiW(pCtrl->GetValue());
+    }
     return _T("");
 }
 
 void CHtmlBoxUI::SetValue(LPCTSTR name, LPCTSTR value)
 {
-    // TODO: litehtml 版实现
+    if (!m_container || !m_liteDoc) return;
+    std::string utf8Name = DuiWToUtf8(name);
+    std::string utf8Val = DuiWToUtf8(value);
+    auto found = m_container->FindControlsByName(m_liteDoc->root(), utf8Name);
+    for (auto& el : found) {
+        litehtml::el_form_control* pCtrl = dynamic_cast<litehtml::el_form_control*>(el.get());
+        if (pCtrl) { pCtrl->SetValue(utf8Val); Invalidate(); }
+    }
 }
 
 bool CHtmlBoxUI::IsChecked(LPCTSTR name)
 {
-    // TODO: litehtml 版实现
+    if (!m_container || !m_liteDoc) return false;
+    std::string utf8Name = DuiWToUtf8(name);
+    auto found = m_container->FindControlsByName(m_liteDoc->root(), utf8Name);
+    for (auto& el : found) {
+        litehtml::el_form_control* pCtrl = dynamic_cast<litehtml::el_form_control*>(el.get());
+        if (pCtrl) return pCtrl->IsChecked();
+    }
     return false;
 }
 
 void CHtmlBoxUI::SetChecked(LPCTSTR name, bool bChecked)
 {
-    // TODO: litehtml 版实现
+    if (!m_container || !m_liteDoc) return;
+    std::string utf8Name = DuiWToUtf8(name);
+    auto found = m_container->FindControlsByName(m_liteDoc->root(), utf8Name);
+    for (auto& el : found) {
+        litehtml::el_form_control* pCtrl = dynamic_cast<litehtml::el_form_control*>(el.get());
+        if (pCtrl) { pCtrl->SetChecked(bChecked); Invalidate(); }
+    }
 }
 
 int CHtmlBoxUI::GetSelectedIndex(LPCTSTR name)
 {
-    // TODO: litehtml 版实现
+    if (!m_container || !m_liteDoc) return -1;
+    std::string utf8Name = DuiWToUtf8(name);
+    auto found = m_container->FindControlsByName(m_liteDoc->root(), utf8Name);
+    for (auto& el : found) {
+        litehtml::el_form_control* pCtrl = dynamic_cast<litehtml::el_form_control*>(el.get());
+        if (pCtrl) return pCtrl->GetSelectedIndex();
+    }
     return -1;
 }
 
 void CHtmlBoxUI::SetSelectedIndex(LPCTSTR name, int idx)
 {
-    // TODO: litehtml 版实现
+    if (!m_container || !m_liteDoc) return;
+    std::string utf8Name = DuiWToUtf8(name);
+    auto found = m_container->FindControlsByName(m_liteDoc->root(), utf8Name);
+    for (auto& el : found) {
+        litehtml::el_form_control* pCtrl = dynamic_cast<litehtml::el_form_control*>(el.get());
+        if (pCtrl) { pCtrl->SetSelectedIndex(idx); Invalidate(); }
+    }
 }
 
 // ============================ 排版 ============================
@@ -447,6 +485,10 @@ void CHtmlBoxUI::CreateDocument()
     // 创建 litehtml 文档（litehtml v0.9+ 只接受 4 个参数）
     m_liteDoc = litehtml::document::createFromString(html.c_str(), m_container.get(),
                                                      css.c_str(), "");
+    // 设置根元素（供表单按 name 全局查找）
+    if (m_liteDoc && m_container) {
+        m_container->SetRootElement(m_liteDoc->root());
+    }
 }
 
 void CHtmlBoxUI::DestroyDocument()
