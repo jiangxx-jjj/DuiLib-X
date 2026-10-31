@@ -42,6 +42,21 @@ CHtmlBoxUI::CHtmlBoxUI(void)
     // 创建 litehtml 容器
     m_container = std::make_shared<container_win32>();
 
+    // 创建后端 JS 引擎
+    m_jsBridge = std::make_shared<litehtml::JsBridge>();
+    m_jsBridge->BindHost(this);
+    // JS 弹窗在前端显示（alert/confirm 转成 Win32 消息框，由宿主窗口弹出）
+    m_jsBridge->SetAlertCallback([this](const std::string& msg) {
+        CDuiString wMsg = Utf8ToDuiW(msg);
+        HWND hWnd = m_pManager ? m_pManager->GetPaintWindow() : NULL;
+        ::MessageBox(hWnd, wMsg.GetData(), _T("页面消息"), MB_OK | MB_ICONINFORMATION);
+    });
+    m_jsBridge->SetConfirmCallback([this](const std::string& msg) -> bool {
+        CDuiString wMsg = Utf8ToDuiW(msg);
+        HWND hWnd = m_pManager ? m_pManager->GetPaintWindow() : NULL;
+        return ::MessageBox(hWnd, wMsg.GetData(), _T("页面确认"), MB_OKCANCEL | MB_ICONQUESTION) == IDOK;
+    });
+
     // 图片加载回调：复用 DuiLib 的渲染引擎
     m_container->SetImageCallbacks(
         [](const std::string& src, int& w, int& h) -> bool {
@@ -449,8 +464,7 @@ void CHtmlBoxUI::SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue)
 // ============================ litehtml 文档管理 ============================
 
 void CHtmlBoxUI::CreateDocument()
-{
-    DestroyDocument();
+{    DestroyDocument();
 
     if (m_sHtml.IsEmpty()) return;
 
@@ -488,7 +502,55 @@ void CHtmlBoxUI::CreateDocument()
     // 设置根元素（供表单按 name 全局查找）
     if (m_liteDoc && m_container) {
         m_container->SetRootElement(m_liteDoc->root());
+        // 执行页面里的 <script>（后端 JS，弹窗在前端显示）
+        ExecuteScripts();
     }
+}
+
+// ============================ JS 支持 ============================
+
+bool CHtmlBoxUI::EvalJs(LPCTSTR jsCode)
+{
+    if (!m_jsBridge || jsCode == NULL) return false;
+    return m_jsBridge->Eval(DuiWToUtf8(jsCode));
+}
+
+void CHtmlBoxUI::CloseHostWindow()
+{
+    // JS close_window() → 通过通知回调到后端逻辑（沿用表单提交通知）
+    if (m_pManager != NULL) {
+        m_sNotifyName = _T("js_close_window");
+        m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLFORMSUBMIT,
+                               (WPARAM)m_sNotifyName.GetData(), 0, true);
+    }
+}
+
+void CHtmlBoxUI::ExecuteScripts()
+{
+    if (!m_jsBridge || !m_liteDoc) return;
+
+    // 递归收集 <script> 标签内容并按顺序执行
+    std::function<void(const litehtml::element::ptr&)> walk =
+        [&](const litehtml::element::ptr& el) {
+        if (!el) return;
+        const char* tag = el->get_tagName();
+        if (tag && _stricmp(tag, "script") == 0) {
+            // 取脚本内容（子文本）
+            std::string js;
+            litehtml::string text;
+            el->get_text(text);
+            js = text;
+            if (!js.empty()) {
+                m_jsBridge->Eval(js);   // 后端执行；错误静默（LastError 可查）
+            }
+            // script 无子元素需要遍历
+            return;
+        }
+        for (const auto& child : el->children()) {
+            walk(child);
+        }
+    };
+    walk(m_liteDoc->root());
 }
 
 void CHtmlBoxUI::DestroyDocument()

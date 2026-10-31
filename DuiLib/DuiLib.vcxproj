@@ -365,7 +365,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UILIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
@@ -402,7 +402,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UILIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -438,7 +438,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UILIB_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
@@ -475,7 +475,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UILIB_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -511,7 +511,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UILIB_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
@@ -548,7 +548,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UILIB_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -584,7 +584,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UILIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
@@ -621,7 +621,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;UILIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -657,7 +657,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MinSpace</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UILIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -695,7 +695,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MinSpace</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UILIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -733,7 +733,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MinSpace</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UILIB_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -770,7 +770,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MinSpace</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UILIB_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -807,7 +807,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MinSpace</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UILIB_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -844,7 +844,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MinSpace</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UILIB_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -881,7 +881,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MinSpace</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UILIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -917,7 +917,7 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\3rd\litehtml\include;..\3rd\litehtml\include\litehtml;..\3rd\litehtml\include\gumbo;..\3rd\litehtml\include\gumbo\gumbo;..\3rd\duktape\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MinSpace</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;UILIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -948,6 +948,11 @@
     <ClCompile Include="Control\UIPageControl.cpp" />
     <ClCompile Include="Control\litehtml\container_win32.cpp" />
     <ClCompile Include="Control\litehtml\el_form.cpp" />
+    <ClCompile Include="Control\litehtml\js_bridge.cpp" />
+    <ClCompile Include="..\3rd\duktape\include\duktape.c">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
     <ClCompile Include="Control\UIHtmlBox.cpp" />
     <ClCompile Include="Control\UIRollText.cpp" />
     <ClCompile Include="Control\UIAnimation.cpp" />
@@ -1044,6 +1049,7 @@
     <ClInclude Include="Control\UIPageControl.h" />
     <ClInclude Include="Control\litehtml\container_win32.h" />
     <ClInclude Include="Control\litehtml\el_form.h" />
+    <ClInclude Include="Control\litehtml\js_bridge.h" />
     <ClInclude Include="Control\UIHtmlBox.h" />
     <ClInclude Include="Control\UIRollText.h" />
     <ClInclude Include="Control\UIAnimation.h" />

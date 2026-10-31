@@ -13,6 +13,7 @@
 
 #include "../Layout/UIVerticalLayout.h"
 #include "litehtml/container_win32.h"
+#include "litehtml/js_bridge.h"
 #include "litehtml.h"
 
 namespace DuiLib
@@ -47,6 +48,13 @@ public:
     int  GetSelectedIndex(LPCTSTR name);            // select 选中项
     void SetSelectedIndex(LPCTSTR name, int idx);
 
+    // ---- JS 支持（后端执行，弹窗在前端显示）----
+    bool EvalJs(LPCTSTR jsCode);                    // 执行一段 JS
+    void CloseHostWindow();                         // JS close_window() 关闭宿主窗口
+
+    // ---- <script> 标签提取与执行 ----
+    void ExecuteScripts();                          // 遍历 DOM 执行所有 <script> 内容
+
 protected:
     // ---- CVerticalLayoutUI 覆盖 ----
     void SetPos(RECT rc, bool bNeedInvalidate = true) override;
@@ -70,6 +78,7 @@ protected:
     // litehtml 核心对象
     std::shared_ptr<litehtml::document>         m_liteDoc;
     std::shared_ptr<container_win32>            m_container;
+    std::shared_ptr<litehtml::JsBridge>         m_jsBridge;   // 后端 JS 引擎
 
     CDuiString m_sHtml;
     CDuiString m_sCss;
