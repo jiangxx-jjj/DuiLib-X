@@ -246,6 +246,9 @@ void container_win32::draw_background(litehtml::uint_ptr hdc,
         int x = b.border_box.x, y = b.border_box.y;
         int w = b.border_box.width, h = b.border_box.height;
         if (w <= 0 || h <= 0) continue;
+        // 防御：body/根元素的 border_box 可能是巨大值（文档全尺寸），限制绘制尺寸防 GDI+ 崩溃
+        if (w > 32768) w = 32768;
+        if (h > 32768) h = 32768;
 
         Gp::Graphics g(m_hdc);
         g.SetSmoothingMode(Gp::SmoothingModeAntiAlias);
@@ -515,6 +518,7 @@ void container_win32::draw_borders(litehtml::uint_ptr hdc, const litehtml::borde
     int x = draw_pos.x, y = draw_pos.y;
     int w = draw_pos.width, h = draw_pos.height;
     if (w <= 0 || h <= 0) return;
+
 
     Gp::Graphics g(m_hdc);
     g.SetSmoothingMode(Gp::SmoothingModeAntiAlias);

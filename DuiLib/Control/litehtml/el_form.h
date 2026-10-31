@@ -16,6 +16,7 @@
 
 #include "html_tag.h"
 #include "render_item.h"
+#include "render_image.h"
 
 class container_win32;
 
@@ -62,6 +63,11 @@ protected:
     static size_t Utf8CharLen(const std::string& s, size_t bytePos);
     static size_t Utf8BytePos(const std::string& s, size_t charIdx);
     static size_t Utf8CharCount(const std::string& s);
+
+public:
+    // 关键：replaced 元素需要 render_item_image 才会调用 get_content_size
+    // （普通 render_item 的 _render 不调它，控件会没有尺寸）
+    std::shared_ptr<render_item> create_render_item(const std::shared_ptr<render_item>& parent_ri) override;
 };
 
 // ============================ 文本输入框（text/password）============================
@@ -97,6 +103,7 @@ public:
     el_input_check(const document::ptr& doc, container_win32* container, bool isRadio);
 
     bool    is_replaced() const override { return true; }
+    void    parse_attributes() override;
     void    draw(uint_ptr hdc, int x, int y, const position* clip,
                  const std::shared_ptr<render_item>& ri) override;
     void    get_content_size(size& sz, int max_width) override;
@@ -153,7 +160,10 @@ public:
 
 protected:
     int m_selectedIndex;
+    bool m_optionsCollected;
     std::vector<std::string> m_options;      // 选项文本列表
+
+    void CollectOptions();
 };
 
 // ============================ 多行文本框 ============================

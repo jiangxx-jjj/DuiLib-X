@@ -1,6 +1,7 @@
 ﻿#include "StdAfx.h"
 #include "UIHtmlBox.h"
 #include "litehtml/el_form.h"
+#include "litehtml/el_script.h"
 #include "litehtml.h"
 
 #pragma comment(lib, "msimg32.lib")
@@ -347,7 +348,20 @@ bool CHtmlBoxUI::DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl)
     m_container->SetOutput(hDC, szScroll.cx, szScroll.cy, w, h);
 
     // litehtml 绘制
-    m_liteDoc->draw((litehtml::uint_ptr)hDC, -szScroll.cx, -szScroll.cy, NULL);
+    // 注意：clip 必须传有效指针！litehtml 的 html_tag::draw_background 在 is_root() 时
+    // 会执行 b.clip_box = *clip，传 NULL 会访问违例（body 有背景色时必崩）
+    litehtml::position clipPos(szScroll.cx, szScroll.cy, w, h);
+    {
+        static FILE* fp = NULL;
+        if (!fp) fp = fopen("C:\\Users\\admin\\AppData\\Local\\Temp\\opencode\\paint_debug.log", "w");
+        if (fp) { fprintf(fp, "DoPaint w=%d h=%d doc=%p docH=%f\n", w, h, (void*)m_liteDoc.get(), m_fDocHeight); fflush(fp); }
+    }
+    m_liteDoc->draw((litehtml::uint_ptr)hDC, -szScroll.cx, -szScroll.cy, &clipPos);
+    {
+        static FILE* fp2 = NULL;
+        if (!fp2) fp2 = fopen("C:\\Users\\admin\\AppData\\Local\\Temp\\opencode\\paint_debug.log", "a");
+        if (fp2) { fprintf(fp2, "draw done\n"); fflush(fp2); }
+    }
 
     return true;
 }
@@ -535,11 +549,17 @@ void CHtmlBoxUI::ExecuteScripts()
         if (!el) return;
         const char* tag = el->get_tagName();
         if (tag && _stricmp(tag, "script") == 0) {
-            // 取脚本内容（子文本）
+            // el_script 把脚本内容存在私有 m_text（get_text 返回空），
+            // 通过 GetScriptText() 访问器获取
             std::string js;
-            litehtml::string text;
-            el->get_text(text);
-            js = text;
+            auto* pScript = dynamic_cast<litehtml::el_script*>(el.get());
+            if (pScript) {
+                js = pScript->GetScriptText();
+            } else {
+                litehtml::string text;
+                el->get_text(text);
+                js = text;
+            }
             if (!js.empty()) {
                 m_jsBridge->Eval(js);   // 后端执行；错误静默（LastError 可查）
             }

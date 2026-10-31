@@ -1,4 +1,4 @@
-#include "html.h"
+﻿#include "html.h"
 #include "style.h"
 
 namespace litehtml
@@ -692,6 +692,13 @@ bool style::parse_one_background(const string& val, document_container* containe
 			css::parse_css_url(token, url);
 			bg.m_image = { url };
 			image_found = true;
+		} else if(token.find("gradient(") != string::npos)
+		{
+			// linear-gradient / radial-gradient：原样保留，
+			// 由 document_container::draw_background 自行解析绘制
+			if (image_found) return false;
+			bg.m_image = { token };
+			image_found = true;
 		} else if( (idx = value_index(token, background_repeat_strings)) >= 0 )
 		{
 			if (repeat_found) return false;
@@ -761,9 +768,20 @@ void style::parse_background_image(const string& val, const string& baseurl, boo
 
 	for (const auto& token : tokens)
 	{
+		string one = token;
+		trim(one);
 		string url;
-		css::parse_css_url(token, url);
-		images.push_back(url);
+		css::parse_css_url(one, url);
+		if (!url.empty())
+		{
+			images.push_back(url);
+		}
+		else if (!one.empty())
+		{
+			// 非 url() 的值（如 linear-gradient(...)）原样保留，
+			// 由 document_container::draw_background 自行解析绘制
+			images.push_back(one);
+		}
 	}
 
 	add_parsed_property(_background_image_,         property_value(images,  important));

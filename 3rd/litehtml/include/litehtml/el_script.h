@@ -15,6 +15,9 @@ namespace litehtml
 		bool appendChild(const ptr &el) override;
 		string_id tag() const override;
 		const char*	get_tagName() const override;
+
+		// 宿主获取脚本内容（DuiLib 的 JS 桥接用）
+		const string& GetScriptText() const { return m_text; }
 	};
 }
 

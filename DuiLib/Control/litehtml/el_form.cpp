@@ -56,6 +56,14 @@ size_t el_form_control::Utf8CharCount(const std::string& s)
     return count;
 }
 
+// 关键：replaced 元素需要 render_item_image 才会在排版时调用 get_content_size
+std::shared_ptr<render_item> el_form_control::create_render_item(const std::shared_ptr<render_item>& parent_ri)
+{
+    auto ret = std::make_shared<render_item_image>(shared_from_this());
+    ret->parent(parent_ri);
+    return ret;
+}
+
 // 取元素已计算的字体句柄（litehtml 在 compute_styles 时已创建）
 static uint_ptr GetElementFont(html_tag* el)
 {
@@ -253,6 +261,8 @@ el_input_check::el_input_check(const document::ptr& doc, container_win32* contai
 {
 }
 
+// 注意：checked 属性在 parse_attributes 里读（此时 attrs 已挂载）
+
 void el_input_check::get_content_size(size& sz, int max_width)
 {
     sz.width = 14;
@@ -312,6 +322,12 @@ void el_input_check::on_click()
         m_checked = !m_checked;
     }
     if (m_container) m_container->OnValueChanged(GetName());
+}
+
+void el_input_check::parse_attributes()
+{
+    // checked 属性（parse_attributes 时 attrs 已挂载）
+    if (get_attr("checked")) m_checked = true;
 }
 
 // ============================ 按钮 ============================
@@ -418,24 +434,33 @@ void el_button::on_click()
 
 el_select::el_select(const document::ptr& doc, container_win32* container)
     : el_form_control(doc, container, "inline-block")
-    , m_selectedIndex(0)
+    , m_selectedIndex(0), m_optionsCollected(false)
 {
 }
 
 void el_select::parse_attributes()
 {
-    // 注意：parse_attributes 时子节点可能还没挂上来，
-    // 选项文本在 draw 时实时收集（见 CollectOptions）
+    // 注意：parse_attributes 时子节点（option）还没挂上来，
+    // selected 初始化放在首次 draw（DrawOptionsIfNeeded）
     const char* aw = get_attr("width");
     if (aw) m_style.add_property(_width_, aw);
     const char* ah = get_attr("height");
     if (ah) m_style.add_property(_height_, ah);
+}
 
-    // 默认选中 selected 的 option
+// 收集 option 选项（render/draw 时都会调用；含 selected 初始化，只做一次）
+void el_select::CollectOptions()
+{
+    if (m_optionsCollected) return;
+    m_optionsCollected = true;
+    m_options.clear();
     int idx = 0;
     for (const auto& child : m_children) {
         if (child->get_tagName() && _stricmp(child->get_tagName(), "option") == 0) {
-            if (child->get_attr("selected")) { m_selectedIndex = idx; break; }
+            string text;
+            child->get_text(text);
+            m_options.push_back(text);
+            if (child->get_attr("selected")) m_selectedIndex = idx;
             idx++;
         }
     }
@@ -443,6 +468,7 @@ void el_select::parse_attributes()
 
 void el_select::get_content_size(size& sz, int max_width)
 {
+    CollectOptions();   // render 时子节点已挂载，在这里完成初始化
     sz.width = 160;
     sz.height = 26;
 }
@@ -456,15 +482,7 @@ void el_select::draw(uint_ptr hdc, int x, int y, const position* clip,
     position pos = GetDrawPos(x, y, ri);
     if (!pos.does_intersect(clip)) return;
 
-    // 实时收集 option
-    m_options.clear();
-    for (const auto& child : m_children) {
-        if (child->get_tagName() && _stricmp(child->get_tagName(), "option") == 0) {
-            string text;
-            child->get_text(text);
-            m_options.push_back(text);
-        }
-    }
+    CollectOptions();
 
     html_tag::draw(hdc, x, y, clip, ri);
 
