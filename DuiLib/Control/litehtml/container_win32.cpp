@@ -1,5 +1,6 @@
 ﻿#include "StdAfx.h"
 #include "container_win32.h"
+#include "el_form.h"
 #include <wchar.h>
 
 // GDI+ 初始化
@@ -636,9 +637,25 @@ litehtml::element::ptr container_win32::create_element(const char* tag_name,
     const litehtml::string_map& attributes,
     const std::shared_ptr<litehtml::document>& doc)
 {
-    // 阶段 3：表单控件暂时用 litehtml 默认实现（占位）
-    // 阶段 4 会统一用 CSS Grid 布局后，再实现完整的表单自绘
-    // 目前先保证链接点击和光标切换可用
+    // 自定义表单控件（replaced element 方式，见 el_form.h）
+    if (_stricmp(tag_name, "input") == 0) {
+        std::string type = "text";
+        auto it = attributes.find("type");
+        if (it != attributes.end()) type = it->second;
+        ToLower(type);
+
+        if (type == "checkbox") return std::make_shared<litehtml::el_input_check>(doc, this, false);
+        if (type == "radio")    return std::make_shared<litehtml::el_input_check>(doc, this, true);
+        if (type == "hidden")   return nullptr;
+        if (type == "submit" || type == "button" || type == "reset")
+            return std::make_shared<litehtml::el_button>(doc, this);
+        return std::make_shared<litehtml::el_input_text>(doc, this, type.c_str());
+    }
+    if (_stricmp(tag_name, "select") == 0)  return std::make_shared<litehtml::el_select>(doc, this);
+    if (_stricmp(tag_name, "button") == 0)  return std::make_shared<litehtml::el_button>(doc, this);
+    if (_stricmp(tag_name, "textarea") == 0) return std::make_shared<litehtml::el_textarea>(doc, this);
+
+    // 其它标签用 litehtml 默认实现
     return nullptr;
 }
 
@@ -693,12 +710,83 @@ void container_win32::get_language(litehtml::string& language, litehtml::string&
 
 bool container_win32::InputChar(wchar_t ch)
 {
-    // 阶段 3：表单控件待阶段 4 统一实现
+    if (!m_focusElement) return false;
+
+    // 转发给焦点表单控件（通过 el_form_control 接口）
+    litehtml::el_form_control* pCtrl = dynamic_cast<litehtml::el_form_control*>(m_focusElement.get());
+    if (pCtrl) return pCtrl->InputChar(ch);
     return false;
 }
 
 bool container_win32::InputKeyDown(int vkCode)
 {
-    // 阶段 3：表单控件待阶段 4 统一实现
+    if (!m_focusElement) return false;
+
+    litehtml::el_form_control* pCtrl = dynamic_cast<litehtml::el_form_control*>(m_focusElement.get());
+    if (pCtrl) return pCtrl->InputKeyDown(vkCode);
     return false;
+}
+
+// ============================ 表单控件支持 ============================
+
+Gp::Font* container_win32::GetGpFont(litehtml::uint_ptr hFont)
+{
+    auto it = m_fontById.find(hFont);
+    if (it != m_fontById.end()) return it->second.pFont;
+    return NULL;
+}
+
+void container_win32::OnRadioClicked(litehtml::element::ptr radio)
+{
+    if (!radio || !m_rootElement) return;
+
+    // 全局同名互斥：遍历整棵树找同 name 的 radio 并取消勾选
+    const char* name = radio->get_attr("name");
+    if (!name || !name[0]) return;
+
+    std::vector<litehtml::element::ptr> found;
+    CollectByName(m_rootElement, name, found);
+    for (auto& el : found) {
+        if (el == radio) continue;
+        litehtml::el_form_control* pCtrl = dynamic_cast<litehtml::el_form_control*>(el.get());
+        if (pCtrl && pCtrl->IsChecked()) {
+            pCtrl->SetChecked(false);
+        }
+    }
+}
+
+void container_win32::OnButtonClicked(const std::string& name)
+{
+    if (m_fnButtonClick) m_fnButtonClick(name);
+}
+
+void container_win32::OnValueChanged(const std::string& name)
+{
+    if (m_fnValueChanged) m_fnValueChanged(name);
+}
+
+std::vector<litehtml::element::ptr> container_win32::FindControlsByName(
+    litehtml::element::ptr root, const std::string& name)
+{
+    std::vector<litehtml::element::ptr> out;
+    if (root) CollectByName(root, name, out);
+    return out;
+}
+
+// 递归收集同 name 元素
+static void CollectByNameRec(litehtml::element::ptr node, const std::string& name,
+    std::vector<litehtml::element::ptr>& out)
+{
+    if (!node) return;
+    const char* n = node->get_attr("name");
+    if (n && name == n) out.push_back(node);
+    for (const auto& child : node->children()) {
+        CollectByNameRec(child, name, out);
+    }
+}
+
+void container_win32::CollectByName(litehtml::element::ptr root, const std::string& name,
+    std::vector<litehtml::element::ptr>& out)
+{
+    CollectByNameRec(root, name, out);
 }

@@ -947,6 +947,7 @@
     <ClCompile Include="Control\UILoading.cpp" />
     <ClCompile Include="Control\UIPageControl.cpp" />
     <ClCompile Include="Control\litehtml\container_win32.cpp" />
+    <ClCompile Include="Control\litehtml\el_form.cpp" />
     <ClCompile Include="Control\UIHtmlBox.cpp" />
     <ClCompile Include="Control\UIRollText.cpp" />
     <ClCompile Include="Control\UIAnimation.cpp" />
@@ -1042,6 +1043,7 @@
     <ClInclude Include="Control\UILoading.h" />
     <ClInclude Include="Control\UIPageControl.h" />
     <ClInclude Include="Control\litehtml\container_win32.h" />
+    <ClInclude Include="Control\litehtml\el_form.h" />
     <ClInclude Include="Control\UIHtmlBox.h" />
     <ClInclude Include="Control\UIRollText.h" />
     <ClInclude Include="Control\UIAnimation.h" />

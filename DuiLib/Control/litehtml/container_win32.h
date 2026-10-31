@@ -61,6 +61,24 @@ public:
     void SetFocusElement(litehtml::element::ptr el) { m_focusElement = el; }
     litehtml::element::ptr GetFocusElement() const { return m_focusElement; }
 
+    // ---- 表单控件支持 ----
+    // 由 hFont 句柄取 GDI+ 字体对象（表单控件绘制用）
+    Gp::Font* GetGpFont(litehtml::uint_ptr hFont);
+
+    // 表单控件事件（由 el_form 元素回调）
+    void OnRadioClicked(litehtml::element::ptr radio);
+    void OnButtonClicked(const std::string& name);
+    void OnValueChanged(const std::string& name);
+
+    // 按 name 属性查找所有元素（全局遍历）
+    std::vector<litehtml::element::ptr> FindControlsByName(litehtml::element::ptr root,
+                                                           const std::string& name);
+    // 递归收集（公开供内部使用）
+    void CollectByName(litehtml::element::ptr root, const std::string& name,
+                       std::vector<litehtml::element::ptr>& out);
+    // 设置文档根（供查找遍历）
+    void SetRootElement(litehtml::element::ptr root) { m_rootElement = root; }
+
     // ---- document_container 接口 ----
     litehtml::uint_ptr create_font(const char* faceName, int size, int weight,
         litehtml::font_style italic, unsigned int decoration, litehtml::font_metrics* fm) override;
@@ -128,6 +146,9 @@ protected:
     // 当前焦点表单元素
     litehtml::element::ptr m_focusElement;
 
+    // 文档根元素（供按 name 查找）
+    litehtml::element::ptr m_rootElement;
+
     // 当前光标
     std::string m_cursor;
 
@@ -137,13 +158,15 @@ protected:
     static bool InitGdiPlus();
     static void ShutdownGdiPlus();
 
-    // 工具：litehtml::web_color -> Gdiplus::Color
+    // 工具：litehtml::web_color -> Gdiplus::Color（公开：表单控件用）
+public:
     static Gp::Color ToGpColor(const litehtml::web_color& c, float opacity = 1.0f);
 
-    // 工具：构建圆角路径
+    // 工具：构建圆角路径（公开：表单控件绘制也用）
     static void BuildRoundRectPath(Gp::GraphicsPath& path, int x, int y, int w, int h,
         const litehtml::border_radiuses& br);
 
+protected:
     // 工具：绘制渐变
     void DrawGradient(Gp::Graphics& g, Gp::GraphicsPath& path,
         const std::string& gradientStr, int x, int y, int w, int h);
