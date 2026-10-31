@@ -2,17 +2,18 @@
 #define __UIHTMLBOX_H__
 
 // ==========================================================================
-//  CHtmlBoxUI — HTML/CSS 渲染控件
+//  CHtmlBoxUI — HTML/CSS 渲染控件（litehtml 驱动）
 //
-//  用 HTML 描述界面，自研引擎排版与绘制，DuiLib 原生控件体系承载。
-//  完全不依赖浏览器内核或第三方排版库。
+//  用 HTML 描述界面，litehtml 排版与绘制，DuiLib 原生控件体系承载。
+//  完全不依赖浏览器内核。
 //
 //  XML 用法：<HtmlBox html="page.html" />
 //  代码用法：pBox->SetHtml(LR"(<div>...</div>)");
 // ==========================================================================
 
 #include "../Layout/UIVerticalLayout.h"
-#include "HtmlEngine/HtmlDocument.h"
+#include "litehtml/container_win32.h"
+#include "litehtml.h"
 
 namespace DuiLib
 {
@@ -61,8 +62,15 @@ protected:
     void Relayout(void);                        // 重新排版
     void UpdateScrollRange(void);               // 更新滚动条范围
 
+    // litehtml 文档管理
+    void CreateDocument();                      // 创建/重建 litehtml 文档
+    void DestroyDocument();                     // 销毁文档
+
 protected:
-    HtmlEngine::HtmlDocument m_doc;
+    // litehtml 核心对象
+    std::shared_ptr<litehtml::document>         m_liteDoc;
+    std::shared_ptr<container_win32>            m_container;
+
     CDuiString m_sHtml;
     CDuiString m_sCss;
     CDuiString m_sNotifyName;      // 通知消息的 wParam 载体（保证生命周期）

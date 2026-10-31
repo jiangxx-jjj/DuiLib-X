@@ -18,6 +18,10 @@
 #endif
 #endif
 
+// litehtml 集成：避免 windows.h 的 min/max 宏与 std::min/std::max 冲突
+// 注意：NOMINMAX 会破坏 GDI+ 头文件（它内部用 min/max），所以改为在包含 litehtml 之前手动处理
+// 不定义 NOMINMAX，而是在 container_win32.h 里 #undef min/max 后再包含 litehtml
+
 #ifndef __FILET__
 #define __DUILIB_STR2WSTR(str)	L##str
 #define _DUILIB_STR2WSTR(str)	__DUILIB_STR2WSTR(str)
