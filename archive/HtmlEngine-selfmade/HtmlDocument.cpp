@@ -9,6 +9,9 @@ HtmlDocument::HtmlDocument()
     , m_docWidth(0.0f)
     , m_docHeight(0.0f)
     , m_viewportWidth(0.0f)
+    , m_pHoverNode(NULL)
+    , m_pActiveNode(NULL)
+    , m_bStyleDirty(false)
 {
     // 布局引擎接入 GDI+ 字体测量
     m_layout.SetMeasureCallbacks(HtmlPainter::MeasureText, HtmlPainter::MeasureLineHeight);
@@ -99,6 +102,11 @@ float HtmlDocument::Relayout(float viewportWidth)
     if (viewportWidth < 1.0f) viewportWidth = 1.0f;
     m_viewportWidth = viewportWidth;
 
+    // 重新计算样式（含当前 hover/active 伪类状态）
+    CssParser::SetInteractiveNodes(m_pHoverNode, m_pActiveNode);
+    m_css.ApplyToTree(m_tree);
+    m_bStyleDirty = false;
+
     m_docHeight = m_layout.Layout(m_tree, viewportWidth);
     m_docWidth = viewportWidth;
 
@@ -110,6 +118,10 @@ float HtmlDocument::Relayout(float viewportWidth)
 void HtmlDocument::Paint(HDC hdc, float scrollX, float scrollY, float clipW, float clipH)
 {
     if (!m_bLoaded || hdc == NULL) return;
+
+    // 同步交互状态到 painter（供绘制 hover 高亮等）
+    m_painter.SetHoverNode(m_pHoverNode);
+    m_painter.SetFocusNode(m_pFocusNode);
 
     // 同步表单状态到 painter
     SyncFormState(m_tree.bodyNode);
@@ -128,19 +140,28 @@ Node* HtmlDocument::HitTest(float x, float y)
 bool HtmlDocument::OnMouseMove(float x, float y)
 {
     Node* hit = HitTest(x, y);
-    if (hit == m_painter.GetHoverNode()) return false;
+    if (hit == m_pHoverNode) return false;
+
+    m_pHoverNode = hit;
     m_painter.SetHoverNode(hit);
+    m_bStyleDirty = true;   // hover 变化需要重新计算样式
     return true;
 }
 
 void HtmlDocument::OnMouseLeave()
 {
+    m_pHoverNode = NULL;
     m_painter.SetHoverNode(NULL);
+    m_bStyleDirty = true;
 }
 
 Node* HtmlDocument::OnClick(float x, float y)
 {
     Node* hit = HitTest(x, y);
+
+    // 设置 active 节点（供 :active 伪类）
+    m_pActiveNode = hit;
+    m_bStyleDirty = true;
 
     // 向上找最近的 <a href> 或带 name 的元素
     Node* cur = hit;
@@ -175,19 +196,9 @@ Node* HtmlDocument::OnClick(float x, float y)
         if (tag == "input" && (type == "checkbox" || type == "radio")) {
             FormValue& fv = m_formValues[clickableNode];
             if (type == "radio") {
-                // 同 name 的互斥
+                // 同 name 的互斥：全局遍历整棵树找同名 radio
                 std::string groupName = clickableNode->GetAttr("name");
-                // 简单实现：只清除同父级下同名 radio
-                if (clickableNode->parent != NULL) {
-                    for (size_t i = 0; i < clickableNode->parent->children.size(); i++) {
-                        Node* sib = clickableNode->parent->children[i];
-                        if (sib->tagName == "input" &&
-                            ToLower(sib->GetAttr("type")) == "radio" &&
-                            sib->GetAttr("name") == groupName) {
-                            m_formValues[sib].checked = false;
-                        }
-                    }
-                }
+                ClearRadioGroup(m_tree.bodyNode, groupName);
                 fv.checked = true;
             } else {
                 fv.checked = !fv.checked;
@@ -211,8 +222,15 @@ Node* HtmlDocument::OnClick(float x, float y)
             return clickableNode;
         }
 
-        // 文本框：获得焦点
+        // 文本框：获得焦点，并把光标放到末尾
         if ((tag == "input" && (type == "text" || type == "password")) || tag == "textarea") {
+            FormValue& fv = m_formValues[clickableNode];
+            // 统计 UTF-8 字符数作为光标位置
+            size_t count = 0;
+            for (size_t i = 0; i < fv.value.size(); i++) {
+                if ((fv.value[i] & 0xC0) != 0x80) count++;
+            }
+            fv.caretPos = count;
             SetFocusNode(clickableNode);
             return clickableNode;
         }
@@ -227,6 +245,29 @@ Node* HtmlDocument::OnClick(float x, float y)
     return hit;
 }
 
+// 鼠标释放时清除 active 状态
+void HtmlDocument::OnMouseUp()
+{
+    if (m_pActiveNode != NULL) {
+        m_pActiveNode = NULL;
+        m_bStyleDirty = true;
+    }
+}
+
+// 全局清除同名 radio 的选中状态
+void HtmlDocument::ClearRadioGroup(Node* node, const std::string& groupName)
+{
+    if (node == NULL) return;
+    if (node->IsElement() && node->tagName == "input" &&
+        ToLower(node->GetAttr("type")) == "radio" &&
+        node->GetAttr("name") == groupName) {
+        m_formValues[node].checked = false;
+    }
+    for (size_t i = 0; i < node->children.size(); i++) {
+        ClearRadioGroup(node->children[i], groupName);
+    }
+}
+
 // ============================ 表单状态 ============================
 
 void HtmlDocument::InitFormValues(Node* node)
@@ -239,6 +280,7 @@ void HtmlDocument::InitFormValues(Node* node)
             fv.value = node->GetAttr("value");
             fv.checked = node->HasAttr("checked");
             fv.selectedIndex = 0;
+            fv.caretPos = 0;
 
             // select：找 selected 的 option
             if (node->tagName == "select") {
@@ -280,7 +322,8 @@ void HtmlDocument::SyncFormState(Node* node)
             st.value = it->second.value;
             st.checked = it->second.checked;
             st.selectedIndex = it->second.selectedIndex;
-            st.focused = (m_painter.GetFocusNode() == node);
+            st.focused = (m_pFocusNode == node);
+            st.caretPos = it->second.caretPos;
             m_painter.SetFormState(node, st);
         }
     }
@@ -329,6 +372,12 @@ void HtmlDocument::SetFormValue(Node* node, const std::string& value)
 {
     if (node == NULL) return;
     m_formValues[node].value = value;
+    // 设置值后光标移到末尾
+    size_t count = 0;
+    for (size_t i = 0; i < value.size(); i++) {
+        if ((value[i] & 0xC0) != 0x80) count++;
+    }
+    m_formValues[node].caretPos = count;
 }
 
 bool HtmlDocument::GetFormChecked(Node* node)
@@ -360,19 +409,54 @@ void HtmlDocument::SetFormSelectedIndex(Node* node, int idx)
 
 Node* HtmlDocument::GetFocusNode() const
 {
-    return m_painter.GetFocusNode();
+    return m_pFocusNode;
 }
 
 void HtmlDocument::SetFocusNode(Node* node)
 {
-    m_painter.SetFocusNode(node);
+    if (m_pFocusNode != node) {
+        m_pFocusNode = node;
+        m_painter.SetFocusNode(node);
+        m_bStyleDirty = true;   // focus 变化影响 :focus 伪类
+    }
 }
 
 // ============================ 键盘 ============================
 
+// 把 UTF-8 字符串按字符边界拆分，返回每个字符的字节长度
+static size_t Utf8CharLen(const std::string& s, size_t pos)
+{
+    if (pos >= s.size()) return 0;
+    unsigned char c = (unsigned char)s[pos];
+    if ((c & 0x80) == 0) return 1;          // ASCII
+    if ((c & 0xE0) == 0xC0) return 2;        // 2-byte
+    if ((c & 0xF0) == 0xE0) return 3;        // 3-byte (中文等)
+    if ((c & 0xF8) == 0xF0) return 4;        // 4-byte (emoji)
+    return 1;                                // 容错：按单字节
+}
+
+// 在 UTF-8 字符串的字符索引处插入/删除，返回新的字节位置
+static size_t Utf8BytePos(const std::string& s, size_t charIdx)
+{
+    size_t bytePos = 0;
+    size_t c = 0;
+    while (bytePos < s.size() && c < charIdx) {
+        bytePos += Utf8CharLen(s, bytePos);
+        c++;
+    }
+    return bytePos;
+}
+
+static size_t Utf8CharCount(const std::string& s)
+{
+    size_t count = 0;
+    for (size_t i = 0; i < s.size(); i += Utf8CharLen(s, i)) count++;
+    return count;
+}
+
 bool HtmlDocument::InputChar(wchar_t ch)
 {
-    Node* focus = m_painter.GetFocusNode();
+    Node* focus = m_pFocusNode;
     if (focus == NULL) return false;
 
     std::string tag = focus->tagName;
@@ -384,15 +468,19 @@ bool HtmlDocument::InputChar(wchar_t ch)
     if (ch < 32) return false;
 
     FormValue& fv = m_formValues[focus];
-    fv.value += (char)ch;   // 简化：单字节字符直接追加
+    size_t caretByte = Utf8BytePos(fv.value, fv.caretPos);
 
-    // 中文等宽字符：转 UTF-8
+    // 构造要插入的 UTF-8 字节序列
+    std::string insert;
     if (ch > 127) {
-        // 撤销刚才的追加，改为 UTF-8
-        if (!fv.value.empty()) fv.value.erase(fv.value.size() - 1);
         std::wstring w(1, ch);
-        fv.value += WideToUtf8(w);
+        insert = WideToUtf8(w);
+    } else {
+        insert = (char)ch;
     }
+
+    fv.value.insert(caretByte, insert);
+    fv.caretPos++;   // 字符索引 +1
 
     if (m_fnFormChanged) m_fnFormChanged(focus->GetAttr("name"));
     return true;
@@ -400,7 +488,7 @@ bool HtmlDocument::InputChar(wchar_t ch)
 
 bool HtmlDocument::InputKeyDown(int vkCode)
 {
-    Node* focus = m_painter.GetFocusNode();
+    Node* focus = m_pFocusNode;
     if (focus == NULL) return false;
 
     std::string tag = focus->tagName;
@@ -410,20 +498,41 @@ bool HtmlDocument::InputKeyDown(int vkCode)
     if (!bEditable) return false;
 
     FormValue& fv = m_formValues[focus];
+    size_t charCount = Utf8CharCount(fv.value);
 
     if (vkCode == VK_BACK) {
-        if (!fv.value.empty()) {
-            // 删除最后一个 UTF-8 字符
-            size_t pos = fv.value.size() - 1;
-            while (pos > 0 && (fv.value[pos] & 0xC0) == 0x80) pos--;
-            fv.value.erase(pos);
+        if (fv.caretPos > 0) {
+            size_t bytePos = Utf8BytePos(fv.value, fv.caretPos);
+            size_t prevByte = Utf8BytePos(fv.value, fv.caretPos - 1);
+            fv.value.erase(prevByte, bytePos - prevByte);
+            fv.caretPos--;
         }
         if (m_fnFormChanged) m_fnFormChanged(focus->GetAttr("name"));
         return true;
     }
     if (vkCode == VK_DELETE) {
-        fv.value.clear();
+        if (fv.caretPos < charCount) {
+            size_t bytePos = Utf8BytePos(fv.value, fv.caretPos);
+            size_t nextByte = Utf8BytePos(fv.value, fv.caretPos + 1);
+            fv.value.erase(bytePos, nextByte - bytePos);
+        }
         if (m_fnFormChanged) m_fnFormChanged(focus->GetAttr("name"));
+        return true;
+    }
+    if (vkCode == VK_LEFT) {
+        if (fv.caretPos > 0) fv.caretPos--;
+        return true;
+    }
+    if (vkCode == VK_RIGHT) {
+        if (fv.caretPos < charCount) fv.caretPos++;
+        return true;
+    }
+    if (vkCode == VK_HOME) {
+        fv.caretPos = 0;
+        return true;
+    }
+    if (vkCode == VK_END) {
+        fv.caretPos = charCount;
         return true;
     }
 

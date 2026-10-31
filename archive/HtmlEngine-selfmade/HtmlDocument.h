@@ -60,6 +60,8 @@ public:
     void OnMouseLeave();
     // 点击（返回被点击的节点）
     Node* OnClick(float x, float y);
+    // 鼠标释放（清除 :active 状态）
+    void OnMouseUp();
 
     // ---- 表单 ----
     // 按 name 找控件
@@ -81,6 +83,12 @@ public:
     // ---- 键盘 ----
     bool InputChar(wchar_t ch);
     bool InputKeyDown(int vkCode);
+
+    // ---- 交互状态查询 ----
+    Node* GetHoverNode() const { return m_pHoverNode; }
+    Node* GetActiveNode() const { return m_pActiveNode; }
+    bool  IsStyleDirty() const { return m_bStyleDirty; }
+    void  ClearStyleDirty() { m_bStyleDirty = false; }
 
     // ---- 事件回调 ----
     // 链接点击
@@ -131,13 +139,23 @@ private:
         std::string value;
         bool        checked;
         int         selectedIndex;
+        size_t      caretPos;       // 光标位置（字符索引，0-based）
+        FormValue() : checked(false), selectedIndex(0), caretPos(0) {}
     };
     std::map<Node*, FormValue> m_formValues;
+
+    // 交互状态
+    Node* m_pHoverNode;             // 当前鼠标悬停节点
+    Node* m_pActiveNode;            // 当前鼠标按下节点
+    Node* m_pFocusNode;             // 当前键盘焦点节点
+    bool  m_bStyleDirty;            // 样式因交互需要重算
 
     // 初始化节点表单状态
     void InitFormValues(Node* node);
     // 同步到 painter
     void SyncFormState(Node* node);
+    // 全局清除同名 radio 选中
+    void ClearRadioGroup(Node* node, const std::string& groupName);
 };
 
 } // namespace HtmlEngine

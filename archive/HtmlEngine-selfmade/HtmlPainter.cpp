@@ -739,10 +739,23 @@ void HtmlPainter::PaintFormControl(Node* node, float x, float y, float w, float 
         fmt.SetTrimming(StringTrimmingEllipsisCharacter);
         g.DrawString(wText.c_str(), (INT)wText.size(), pFont, rc, &fmt, &txt);
 
-        // 焦点光标
+        // 焦点光标：按字符索引定位，支持中文等宽字符
         if (pState != NULL && pState->focused) {
-            float caretX = x + 5 + (wText.empty() ? 0.0f : MeasureText(displayText, st.fontFamily,
-                                                    st.fontSize, st.fontWeight >= FONT_WEIGHT_BOLD, false));
+            size_t caretChar = (pState->caretPos <= (size_t)INT_MAX) ? pState->caretPos : 0;
+            // 把字符索引转成字节索引
+            size_t caretByte = 0;
+            size_t c = 0;
+            while (caretByte < displayText.size() && c < caretChar) {
+                unsigned char uc = (unsigned char)displayText[caretByte];
+                if ((uc & 0x80) == 0) caretByte += 1;
+                else if ((uc & 0xE0) == 0xC0) caretByte += 2;
+                else if ((uc & 0xF0) == 0xE0) caretByte += 3;
+                else caretByte += 4;
+                c++;
+            }
+            std::string beforeCaret = displayText.substr(0, caretByte);
+            float caretX = x + 5 + MeasureText(beforeCaret, st.fontFamily,
+                                               st.fontSize, st.fontWeight >= FONT_WEIGHT_BOLD, false);
             Pen caret(Gdiplus::Color(255, 0, 0, 0), 1.0f);
             g.DrawLine(&caret, caretX, y + 3, caretX, y + h - 3);
         }

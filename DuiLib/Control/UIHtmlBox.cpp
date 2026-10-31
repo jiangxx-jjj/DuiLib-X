@@ -115,6 +115,12 @@ LPVOID CHtmlBoxUI::GetInterface(LPCTSTR pstrName)
     return CVerticalLayoutUI::GetInterface(pstrName);
 }
 
+UINT CHtmlBoxUI::GetControlFlags() const
+{
+    // 必须返回 UIFLAG_SETCURSOR，否则 DuiLib 管理器不会派发 UIEVENT_SETCURSOR 事件
+    return UIFLAG_SETCURSOR;
+}
+
 // ============================ 内容加载 ============================
 
 bool CHtmlBoxUI::SetHtml(LPCTSTR html)
@@ -309,7 +315,15 @@ void CHtmlBoxUI::DoEvent(TEventUI& event)
     if (event.Type == UIEVENT_MOUSEMOVE) {
         float dx = (float)(event.ptMouse.x - m_rcItem.left);
         float dy = (float)(event.ptMouse.y - m_rcItem.top);
-        if (m_doc.OnMouseMove(dx, dy)) Invalidate();
+        SIZE szScroll = GetScrollPos();
+        if (m_doc.OnMouseMove(dx + (float)szScroll.cx, dy + (float)szScroll.cy)) {
+            // hover 变化：样式可能因 :hover 伪类改变，需要重排
+            if (m_doc.IsStyleDirty()) {
+                m_doc.Relayout((float)(m_rcItem.right - m_rcItem.left));
+                m_doc.ClearStyleDirty();
+            }
+            Invalidate();
+        }
     }
     else if (event.Type == UIEVENT_MOUSELEAVE) {
         m_doc.OnMouseLeave();
@@ -323,11 +337,48 @@ void CHtmlBoxUI::DoEvent(TEventUI& event)
         SetFocus();
         Invalidate();
     }
+    else if (event.Type == UIEVENT_BUTTONUP) {
+        m_doc.OnMouseUp();
+        Invalidate();
+    }
     else if (event.Type == UIEVENT_CHAR) {
         if (m_doc.InputChar(event.chKey)) Invalidate();
     }
     else if (event.Type == UIEVENT_KEYDOWN) {
         if (m_doc.InputKeyDown((int)event.wParam)) Invalidate();
+    }
+    else if (event.Type == UIEVENT_SETCURSOR) {
+        // 根据命中节点的 cursor 样式设置鼠标光标
+        float dx = (float)(event.ptMouse.x - m_rcItem.left);
+        float dy = (float)(event.ptMouse.y - m_rcItem.top);
+        SIZE szScroll = GetScrollPos();
+        HtmlEngine::Node* hit = m_doc.HitTest(dx + (float)szScroll.cx, dy + (float)szScroll.cy);
+        if (hit != NULL) {
+            // 向上找最近的带 cursor 样式的元素
+            HtmlEngine::Node* cur = hit;
+            while (cur != NULL) {
+                if (cur->IsElement() && !cur->style.cursor.empty() && cur->style.cursor != "auto") {
+                    if (cur->style.cursor == "pointer" || cur->style.cursor == "hand") {
+                        ::SetCursor(::LoadCursor(NULL, MAKEINTRESOURCE(IDC_HAND)));
+                        return;
+                    }
+                    // 其它 cursor 值按需扩展（text/wait/move 等）
+                    break;
+                }
+                cur = cur->parent;
+            }
+            // 可点击元素默认手型
+            cur = hit;
+            while (cur != NULL) {
+                if (cur->IsElement() && (cur->HasAttr("name") || cur->tagName == "a")) {
+                    ::SetCursor(::LoadCursor(NULL, MAKEINTRESOURCE(IDC_HAND)));
+                    return;
+                }
+                cur = cur->parent;
+            }
+        }
+        ::SetCursor(::LoadCursor(NULL, MAKEINTRESOURCE(IDC_ARROW)));
+        return;
     }
     else if (event.Type == UIEVENT_SCROLLWHEEL) {
         int delta = ((int)event.wParam > 0) ? -60 : 60;

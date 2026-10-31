@@ -27,6 +27,7 @@ public:
 
     LPCTSTR GetClass() const override;
     LPVOID GetInterface(LPCTSTR pstrName) override;
+    UINT GetControlFlags() const override;   // 返回 UIFLAG_SETCURSOR，让管理器派发光标事件
 
     // ---- 内容加载 ----
     bool SetHtml(LPCTSTR html);                 // 直接设置 HTML 字符串

@@ -92,6 +92,11 @@ public:
     // 从元素的 style="..." 属性应用内联样式
     static void ApplyInlineStyle(Node* node, ComputedStyle& style, float parentFontSize, float rootFontSize);
 
+    // 设置/查询当前交互节点（供 :hover :active 伪类匹配）
+    static void SetInteractiveNodes(Node* hover, Node* active);
+    static Node* GetHoverNode();
+    static Node* GetActiveNode();
+
 private:
     std::vector<Rule> m_rules;
 

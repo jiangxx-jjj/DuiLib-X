@@ -47,6 +47,7 @@ public:
         bool        checked;
         int         selectedIndex;
         bool        focused;
+        size_t      caretPos;   // 光标位置（字符索引）
     };
     // 设置某个表单控件的状态
     void SetFormState(Node* node, const FormState& state);

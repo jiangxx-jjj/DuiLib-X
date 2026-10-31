@@ -5,6 +5,21 @@
 namespace HtmlEngine
 {
 
+// 全局交互状态（供伪类匹配查询）
+// 因为 ComputeNode 是静态递归，无法把 Document 的 hover/active 节点传下去，
+// 所以用全局指针记录当前交互目标。
+static Node* g_pHoverNode = NULL;
+static Node* g_pActiveNode = NULL;
+
+void CssParser::SetInteractiveNodes(Node* hover, Node* active)
+{
+    g_pHoverNode = hover;
+    g_pActiveNode = active;
+}
+
+Node* CssParser::GetHoverNode() { return g_pHoverNode; }
+Node* CssParser::GetActiveNode() { return g_pActiveNode; }
+
 // ============================ 默认样式表 ============================
 
 // 浏览器默认样式（相当于 UA stylesheet）
@@ -930,8 +945,11 @@ void CssParser::ComputeNode(Node* node, Node* parent, float parentFontSize, floa
     }
 
     // ---- 应用匹配的 CSS 规则 ----
+    // 伪类状态：如果当前节点是 hover/active 目标，则传入对应状态
+    bool bHover  = (node == g_pHoverNode);
+    bool bActive = (node == g_pActiveNode);
     std::vector<Declaration> decls;
-    CollectMatched(node, decls, false, false);
+    CollectMatched(node, decls, bHover, bActive);
     for (size_t i = 0; i < decls.size(); i++) {
         ApplyDeclaration(decls[i].property, decls[i].value, node->style,
                          parentFontSize, rootFontSize);
