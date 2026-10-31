@@ -45,6 +45,12 @@ public:
     // set_value(name, val)  → 写表单控件值
     // set_checked(name, b)  → 勾选/取消勾选
     // is_checked(name)      → 查询勾选状态
+    // canvas_clear(id, color)                    → 清空画布
+    // canvas_fill_rect(id, x,y,w,h, color)       → 填充矩形
+    // canvas_draw_rect(id, x,y,w,h, color, lw)   → 描边矩形
+    // canvas_draw_line(id, x1,y1,x2,y2, color,lw)→ 画线
+    // canvas_draw_circle(id, cx,cy,r, color,fill)→ 画圆
+    // canvas_draw_text(id, text, x,y, color,size)→ 画文字
     // close_window()        → 关闭宿主窗口
     void RegisterApi();
 
@@ -68,6 +74,14 @@ private:
     static duk_ret_t DukSetChecked(duk_context* ctx);
     static duk_ret_t DukIsChecked(duk_context* ctx);
     static duk_ret_t DukCloseWindow(duk_context* ctx);
+
+    // canvas 绘图桥接
+    static duk_ret_t DukCanvasClear(duk_context* ctx);
+    static duk_ret_t DukCanvasFillRect(duk_context* ctx);
+    static duk_ret_t DukCanvasDrawRect(duk_context* ctx);
+    static duk_ret_t DukCanvasDrawLine(duk_context* ctx);
+    static duk_ret_t DukCanvasDrawCircle(duk_context* ctx);
+    static duk_ret_t DukCanvasDrawText(duk_context* ctx);
 
     // 从 ctx 取 JsBridge 实例（存于全局 stash）
     static JsBridge* FromCtx(duk_context* ctx);

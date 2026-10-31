@@ -181,7 +181,7 @@ protected:
 };
 
 // ============================ 媒体标签占位 ============================
-// audio/canvas/iframe/svg/embed/object 的降级占位：灰块 + 提示文字
+// iframe/svg/embed/object 的降级占位：灰块 + 提示文字
 
 class el_media_placeholder : public el_form_control
 {
@@ -195,6 +195,118 @@ public:
 
 protected:
     std::string m_tagName;
+};
+
+// ============================ 音频 ============================
+// <audio> 播放控件：播放/暂停按钮 + 进度条（用 Win32 MCI 播放本地文件）
+
+class el_audio : public el_form_control
+{
+public:
+    el_audio(const document::ptr& doc, container_win32* container);
+
+    bool    is_replaced() const override { return true; }
+    void    parse_attributes() override;
+    void    draw(uint_ptr hdc, int x, int y, const position* clip,
+                 const std::shared_ptr<render_item>& ri) override;
+    void    get_content_size(size& sz, int max_width) override;
+    void    on_click() override;
+    bool    on_lbutton_down() override;
+
+    // 点击命中区域判断
+    enum HitZone { HIT_NONE, HIT_PLAY, HIT_BAR };
+    HitZone HitTest(int x, int y, const position& pos) const;
+
+protected:
+    std::string m_src;
+    bool m_playing;
+    // MCI 别名（每个控件唯一）
+    std::string m_mciAlias;
+    void Play();
+    void Pause();
+    void Stop();
+};
+
+// ============================ 画布 ============================
+// <canvas> 位图画布：GDI+ 内存位图，JS 通过桥接 API 绘制
+
+class el_canvas : public el_form_control
+{
+public:
+    el_canvas(const document::ptr& doc, container_win32* container);
+
+    bool    is_replaced() const override { return true; }
+    void    parse_attributes() override;
+    void    draw(uint_ptr hdc, int x, int y, const position* clip,
+                 const std::shared_ptr<render_item>& ri) override;
+    void    get_content_size(size& sz, int max_width) override;
+    void    on_click() override;
+
+    // 按属性初始化画布尺寸（width/height 属性，默认 300x150）
+    int  Width() const { return m_width; }
+    int  Height() const { return m_height; }
+
+    // ---- JS 桥接绘制 API（由 JsBridge 调用，按 name 找到画布）----
+    bool InitBitmap(int w, int h);                          // 创建/重建内存位图
+    bool Clear(const char* color);                          // 填充背景色
+    bool FillRect(int x, int y, int w, int h, const char* color);
+    bool DrawRect(int x, int y, int w, int h, const char* color, float lineWidth);
+    bool DrawLine(int x1, int y1, int x2, int y2, const char* color, float lineWidth);
+    bool DrawCircle(int cx, int cy, float r, const char* color, bool fill);
+    bool DrawText(const char* text, int x, int y, const char* color, float fontSize);
+    // 画布内容是否变化（重绘标记）
+    void SetDirty() { m_dirty = true; }
+
+protected:
+    int  m_width;
+    int  m_height;
+    bool m_dirty;
+    HBITMAP m_hBitmap;      // 内存位图（GDI+ 绘制目标）
+    int     m_bitmapW;
+    int     m_bitmapH;
+};
+
+// ============================ 内嵌框架 ============================
+// <iframe src="page.html">：内嵌子文档渲染（本地 HTML）
+
+class el_iframe : public el_form_control
+{
+public:
+    el_iframe(const document::ptr& doc, container_win32* container);
+
+    bool    is_replaced() const override { return true; }
+    void    parse_attributes() override;
+    void    draw(uint_ptr hdc, int x, int y, const position* clip,
+                 const std::shared_ptr<render_item>& ri) override;
+    void    get_content_size(size& sz, int max_width) override;
+    void    on_click() override;
+
+protected:
+    std::string m_src;
+    // 子文档（懒加载，随宿主文档一起绘制）
+    std::shared_ptr<document> m_childDoc;
+    std::shared_ptr<render_item> m_childRender;
+    bool m_childLoaded;
+};
+
+// ============================ 矢量图 ============================
+// <svg>：简化渲染——支持 rect/circle/line/text 基本形状（内嵌子元素）
+
+class el_svg : public el_form_control
+{
+public:
+    el_svg(const document::ptr& doc, container_win32* container);
+
+    bool    is_replaced() const override { return true; }
+    void    parse_attributes() override;
+    void    draw(uint_ptr hdc, int x, int y, const position* clip,
+                 const std::shared_ptr<render_item>& ri) override;
+    void    get_content_size(size& sz, int max_width) override;
+    void    on_click() override;
+
+protected:
+    int m_width;
+    int m_height;
 };
 
 } // namespace litehtml

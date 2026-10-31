@@ -16,6 +16,8 @@
 #include "litehtml/js_bridge.h"
 #include "litehtml.h"
 
+namespace litehtml { class el_canvas; }   // 前向声明（canvas 元素）
+
 namespace DuiLib
 {
 
@@ -54,6 +56,9 @@ public:
 
     // ---- <script> 标签提取与执行 ----
     void ExecuteScripts();                          // 遍历 DOM 执行所有 <script> 内容
+
+    // ---- canvas 支持（JS 桥接按 id/name 找画布）----
+    litehtml::el_canvas* FindCanvas(const char* id);
 
 protected:
     // ---- CVerticalLayoutUI 覆盖 ----

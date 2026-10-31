@@ -553,6 +553,31 @@ void CHtmlBoxUI::ExecuteScripts()
     walk(m_liteDoc->root());
 }
 
+litehtml::el_canvas* CHtmlBoxUI::FindCanvas(const char* id)
+{
+    if (!m_liteDoc || !id || !id[0]) return NULL;
+
+    // 按 id 属性优先，name 属性次之查找 canvas 元素
+    std::function<litehtml::el_canvas*(const litehtml::element::ptr&)> walk =
+        [&](const litehtml::element::ptr& el) -> litehtml::el_canvas* {
+        if (!el) return NULL;
+        const char* tag = el->get_tagName();
+        if (tag && _stricmp(tag, "canvas") == 0) {
+            const char* eid = el->get_attr("id");
+            const char* ename = el->get_attr("name");
+            if ((eid && strcmp(eid, id) == 0) || (ename && strcmp(ename, id) == 0)) {
+                return dynamic_cast<litehtml::el_canvas*>(el.get());
+            }
+        }
+        for (const auto& child : el->children()) {
+            litehtml::el_canvas* r = walk(child);
+            if (r) return r;
+        }
+        return NULL;
+    };
+    return walk(m_liteDoc->root());
+}
+
 void CHtmlBoxUI::DestroyDocument()
 {
     m_liteDoc.reset();
