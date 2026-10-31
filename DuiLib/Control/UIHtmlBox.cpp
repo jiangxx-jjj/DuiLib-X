@@ -510,9 +510,14 @@ void CHtmlBoxUI::CreateDocument()
         }
     }
 
-    // 创建 litehtml 文档（litehtml v0.9+ 只接受 4 个参数）
+    // 创建 litehtml 文档
+    // 注意参数位：第 3 参是 master_styles（UA 默认样式表，必须保留内置的
+    //   litehtml::master_css —— 里面有 div{display:block} 等关键默认规则），
+    //   第 4 参才是 user_styles（用户追加的 CSS）。
+    //   之前把用户 CSS 传到第 3 参，导致 UA 默认样式整体丢失，
+    //   所有 div 变 inline、界面全部挤在一起。
     m_liteDoc = litehtml::document::createFromString(html.c_str(), m_container.get(),
-                                                     css.c_str(), "");
+                                                     litehtml::master_css, css.c_str());
     // 设置根元素（供表单按 name 全局查找）
     if (m_liteDoc && m_container) {
         m_container->SetRootElement(m_liteDoc->root());
