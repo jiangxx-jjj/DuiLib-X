@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>千戮</title>
+<style>
+/* ============ 设计令牌 ============ */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f4f6fa;--card:#fff;--card-h:#f8fafc;--side:#fff;--border:#e4e8f0;
+  --text:#0B0E27;--ts:#5a627e;--tm:#98a3b5;
+  --accent:#0B0E27;--accent2:#232a5e;--accent3:#3a4180;--accent-bg:rgba(11,14,39,.07);
+  --success:#10b981;--success-bg:rgba(16,185,129,.1);
+  --danger:#ef4444;--danger-bg:rgba(239,68,68,.08);--danger-bd:rgba(239,68,68,.22);
+  --warn:#f59e0b;--warn-bg:rgba(245,158,11,.09);--warn-bd:rgba(245,158,11,.22);
+  --shadow-sm:0 1px 2px rgba(11,14,39,.05);
+  --shadow:0 1px 3px rgba(11,14,39,.06),0 1px 2px rgba(11,14,39,.04);
+  --shadow-md:0 4px 14px rgba(11,14,39,.08);
+  --shadow-lg:0 12px 32px rgba(11,14,39,.12);
+  --btn-shadow:0 2px 8px rgba(11,14,39,.1);
+  --btn-shadow-h:0 6px 18px rgba(11,14,39,.18);
+  --danger-shadow:0 2px 8px rgba(239,68,68,.18);
+  --danger-shadow-h:0 6px 18px rgba(239,68,68,.3);
+  --r-sm:8px;--r:10px;--r-md:12px;--r-lg:16px;
+  --ease:cubic-bezier(.4,0,.2,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+}
+[data-theme="dark"]{
+  --bg:#080a16;--card:#111529;--card-h:#171c38;--side:#0b0e1e;--border:#1f2444;
+  --text:#e6eaf5;--ts:#8e99b6;--tm:#5c6684;
+  --accent:#5b7cfa;--accent2:#7d97ff;--accent3:#4260e0;--accent-bg:rgba(91,124,250,.14);
+  --success:#34d399;--success-bg:rgba(52,211,153,.12);
+  --danger:#f87171;--danger-bg:rgba(248,113,113,.12);--danger-bd:rgba(248,113,113,.26);
+  --warn:#fbbf24;--warn-bg:rgba(251,191,36,.12);--warn-bd:rgba(251,191,36,.26);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow:0 1px 3px rgba(0,0,0,.35);
+  --shadow-md:0 4px 14px rgba(0,0,0,.4);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.5);
+  --btn-shadow:0 2px 8px rgba(0,0,0,.35);
+  --btn-shadow-h:0 6px 18px rgba(0,0,0,.5);
+}
+
+/* ============ 基础 ============ */
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif;
+  background:var(--bg);color:var(--text);height:100vh;overflow:hidden;
+  transition:background .3s var(--ease),color .3s var(--ease);
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+::selection{background:var(--accent);color:#fff}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;border:3px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:var(--tm)}
+.app{display:flex;height:100vh}
+
+/* ============ 侧边栏 ============ */
+.sidebar{width:212px;min-width:212px;background:var(--side);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;transition:.3s var(--ease)}
+.logo{display:flex;align-items:center;gap:11px;padding:22px 18px 18px}
+.logo svg{width:30px;height:30px;fill:var(--accent);flex-shrink:0}
+.logo-text{display:flex;flex-direction:column;min-width:0}
+.logo-text b{font-size:16px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
+.logo-text small{font-size:9px;color:var(--tm);letter-spacing:1.2px;text-transform:uppercase;font-weight:600}
+.nav{flex:1;padding:4px 10px;overflow-y:auto}
+.ni{display:flex;align-items:center;gap:11px;padding:10px 13px;cursor:pointer;color:var(--ts);
+  transition:.18s var(--ease);border-radius:10px;font-size:13px;user-select:none;
+  margin-bottom:2px;position:relative;font-weight:500}
+.ni:hover{background:var(--accent-bg);color:var(--text)}
+.ni.on{background:var(--accent-bg);color:var(--accent);font-weight:600;
+  box-shadow:inset 3px 0 0 var(--accent)}
+.ni svg{width:17px;height:17px;fill:currentColor;flex-shrink:0}
+.ni .badge{margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:700;
+  min-width:17px;height:17px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.sbot{padding:14px 16px 16px;border-top:1px solid var(--border)}
+.theme-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 11px;background:var(--bg);
+  border:1px solid var(--border);border-radius:10px;color:var(--ts);font-size:12px;font-weight:500;
+  cursor:pointer;transition:.2s var(--ease);font-family:inherit}
+.theme-btn:hover{background:var(--card-h);color:var(--text);box-shadow:var(--btn-shadow)}
+.theme-btn svg{width:15px;height:15px;fill:currentColor;flex-shrink:0;transition:transform .35s var(--ease)}
+.theme-btn:hover svg{transform:rotate(20deg)}
+.theme-btn:active svg{transform:rotate(-25deg) scale(.88)}
+.ver{font-size:10px;color:var(--tm);margin-top:10px;display:flex;align-items:center;gap:6px}
+.ver .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+
+/* ============ 主区域 ============ */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.hdr{display:flex;justify-content:space-between;align-items:center;padding:13px 26px;
+  border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0}
+.hdr-l{display:flex;align-items:baseline;gap:10px;min-width:0}
+.hdr-title{font-size:15px;font-weight:600;color:var(--text)}
+.hdr-sub{font-size:11px;color:var(--tm)}
+.hdr-r{display:flex;align-items:center;gap:8px;background:var(--accent-bg);padding:6px 13px;
+  border-radius:20px;font-size:11px;color:var(--accent);font-weight:600;flex-shrink:0}
+.hdr-r .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.ct{flex:1;padding:22px 26px;overflow-y:auto}
+.pg{display:none;animation:fi .3s var(--ease-out)}
+.pg.on{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ============ 按钮 ============ */
+.btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.btn-g,.btn-o,.btn-r{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;
+  transition:.2s var(--ease);font-family:inherit;white-space:nowrap;line-height:1.2}
+.btn-g{background:var(--accent);color:#fff;border:none;box-shadow:0 2px 6px rgba(11,14,39,.18)}
+.btn-g:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:var(--btn-shadow-h)}
+.btn-o{background:var(--card);color:var(--text);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.btn-o:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px);box-shadow:var(--btn-shadow)}
+.btn-r{background:var(--danger);color:#fff;border:none;box-shadow:var(--danger-shadow)}
+.btn-r:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:var(--danger-shadow-h)}
+.btn-g svg,.btn-o svg,.btn-r svg{width:15px;height:15px;fill:currentColor;flex-shrink:0}
+.btn-g:disabled,.btn-o:disabled,.btn-r:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;filter:none}
+.btn-sm{padding:7px 14px;font-size:12px;border-radius:8px}
+.btn-d{background:none;border:1px solid var(--danger-bd);color:var(--danger);padding:7px 14px;
+  font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;transition:.2s var(--ease);font-family:inherit}
+.btn-d:hover{background:var(--danger-bg)}
+
+/* ============ 首页 ============ */
+.hero{display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(135deg,var(--card) 0%,var(--card-h) 100%);
+  border-radius:var(--r-lg);padding:26px 28px;margin-bottom:16px;box-shadow:var(--shadow);
+  border:1px solid var(--border);gap:24px}
+.hero-l{flex:1;min-width:0}
+.hero-l h1{font-size:22px;font-weight:700;margin-bottom:7px;letter-spacing:-.3px}
+.hero-l p{font-size:13px;color:var(--ts);margin-bottom:12px;line-height:1.6;max-width:52ch}
+.hero-l .st{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;
+  padding:5px 12px;border-radius:20px;transition:.25s var(--ease)}
+.hero-l .st .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.st-ok{color:var(--accent);background:var(--accent-bg)}
+.st-ok .dot{background:var(--accent)}
+.st-err{color:var(--danger);background:var(--danger-bg)}
+.st-err .dot{background:var(--danger)}
+.st-wait .dot{background:var(--warn)}
+.hero-r{position:relative;flex-shrink:0}
+.shield3d{width:108px;height:108px;position:relative}
+.shield3d::before{content:'';position:absolute;inset:-14%;border-radius:50%;
+  background:radial-gradient(circle,var(--accent-bg) 0%,transparent 68%);animation:breathe 4.5s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(.9);opacity:.5}50%{transform:scale(1.06);opacity:1}}
+
+.fcards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.fc{background:var(--card);border-radius:var(--r-md);padding:17px;box-shadow:var(--shadow);
+  transition:.22s var(--ease);cursor:pointer;border:1px solid var(--border)}
+.fc:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.fc-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+.fc-hd .ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fc-hd .ic svg{width:18px;height:18px}
+.fc-hd .tag{font-size:10px;padding:4px 9px;border-radius:6px;font-weight:600;white-space:nowrap}
+.fc h3{font-size:13.5px;font-weight:600;margin-bottom:4px}
+.fc p{font-size:11.5px;color:var(--ts);line-height:1.5}
+
+.overview{background:var(--card);border-radius:var(--r-md);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.overview h3{font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.overview h3 svg{width:16px;height:16px;fill:var(--accent)}
+.ov-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.ov-hd h3{margin-bottom:0}
+.log-wrap{max-height:252px;overflow-y:auto;margin:0 -4px;padding:0 4px}
+.log-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);
+  animation:slideIn .3s var(--ease-out)}
+.log-item:last-child{border-bottom:none}
+.log-time{font-size:10.5px;color:var(--tm);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  flex-shrink:0;padding-top:1px;min-width:56px}
+.log-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.log-txt{flex:1;min-width:0;font-size:12px;color:var(--ts);line-height:1.55;word-break:break-word}
+.log-txt b{color:var(--text);font-weight:600}
+.log-empty{text-align:center;padding:26px 16px;color:var(--tm);font-size:12px}
+
+/* 确认框 */
+.cf-ic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;background:var(--warn-bg)}
+.cf-ic svg{width:18px;height:18px;fill:var(--warn)}
+.cf-ic.danger{background:var(--danger-bg)}.cf-ic.danger svg{fill:var(--danger)}
+.cf-ic.info{background:var(--accent-bg)}.cf-ic.info svg{fill:var(--accent)}
+.cf-chk{display:flex;align-items:center;gap:9px;margin-top:14px;cursor:pointer;font-size:12px;
+  color:var(--text);user-select:none}
+.cf-chk input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+
+/* 病毒库更新弹窗 */
+.upd-stage{text-align:center;padding:6px 0 4px}
+.upd-ic{width:64px;height:64px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;
+  justify-content:center;margin:0 auto 14px;transition:.3s var(--ease)}
+.upd-ic svg{width:30px;height:30px;fill:var(--accent)}
+.upd-ic.spin svg{animation:spin 1.1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.upd-ic.ok{background:var(--success-bg)}.upd-ic.ok svg{fill:var(--success)}
+.upd-ic.err{background:var(--danger-bg)}.upd-ic.err svg{fill:var(--danger)}
+.upd-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.upd-sub{font-size:12px;color:var(--ts);line-height:1.6;min-height:18px}
+.upd-bar{margin:16px 0 6px}
+.upd-meta{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px;text-align:left}
+.upd-meta .um{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+.upd-meta .um-k{font-size:10.5px;color:var(--tm);margin-bottom:3px}
+.upd-meta .um-v{font-size:12.5px;font-weight:600;word-break:break-all}
+.upd-meta .um-v.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.upd-log{margin-top:14px;text-align:left;max-height:132px;overflow-y:auto;border-top:1px solid var(--border);padding-top:10px}
+.upd-log .ul-row{display:flex;gap:9px;font-size:11.5px;color:var(--ts);padding:3px 0;align-items:flex-start}
+.upd-log .ul-row .ul-d{width:6px;height:6px;border-radius:50%;margin-top:6px;flex-shrink:0}
+.upd-log .ul-row .ul-t{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--tm);font-size:10.5px;flex-shrink:0;min-width:52px}
+.os .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+/* ============ 扫描页 ============ */
+.page-hd{margin-bottom:18px}
+.page-hd h1{font-size:21px;font-weight:700;margin-bottom:5px;letter-spacing:-.3px}
+.page-hd p{font-size:13px;color:var(--ts);line-height:1.6;max-width:70ch}
+.scan-pg,.repair-pg{max-width:640px;margin:0 auto}
+.scan-types{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.scan-type{background:var(--card);border:2px solid var(--border);border-radius:var(--r-md);
+  padding:20px 14px;cursor:pointer;transition:.22s var(--ease);text-align:center}
+.scan-type:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.scan-type.sel{border-color:var(--accent);background:var(--accent-bg);box-shadow:var(--shadow-md)}
+.scan-type svg{width:30px;height:30px;fill:var(--accent);margin-bottom:9px}
+.scan-type h3{font-size:13px;font-weight:600;margin-bottom:5px}
+.scan-type p{font-size:11px;color:var(--ts);line-height:1.5}
+
+.scan-box,.repair-box{background:var(--card);border-radius:var(--r-lg);padding:36px 32px;text-align:center;
+  box-shadow:var(--shadow);border:1px solid var(--border)}
+.scan-ic{width:82px;height:82px;background:var(--accent-bg);border-radius:50%;display:flex;
+  align-items:center;justify-content:center;margin:0 auto 20px;transition:.3s var(--ease)}
+.scan-ic svg{width:40px;height:40px;fill:var(--accent)}
+.scan-ic.err{background:var(--danger-bg)}
+.scan-ic.err svg{fill:var(--danger)}
+.scan-ic.ok{background:var(--success-bg)}
+.scan-ic.ok svg{fill:var(--success)}
+.scan-ic.act{animation:pulse 2.2s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--accent-bg)}70%{box-shadow:0 0 0 22px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.scan-box h2,.repair-box h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.scan-box>p,.repair-box>p{font-size:13px;color:var(--ts);margin-bottom:20px;line-height:1.5}
+.pbar-w{margin-bottom:22px}
+.pbar-i{display:flex;justify-content:space-between;font-size:11px;color:var(--ts);margin-bottom:7px;gap:10px}
+.pbar{height:6px;background:var(--border);border-radius:6px;overflow:hidden}
+.pbar-f{height:100%;border-radius:6px;transition:width .45s var(--ease);
+  background:linear-gradient(90deg,var(--accent3),var(--accent));position:relative;overflow:hidden}
+.pbar-f.act::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);
+  animation:shine 1.4s linear infinite}
+@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.sp-row{display:flex;justify-content:center;gap:44px;margin-bottom:22px;flex-wrap:wrap}
+.sp{text-align:center}
+.sp-v{font-size:22px;font-weight:700;color:var(--accent);line-height:1.2}
+.sp-v.danger{color:var(--danger)}
+.sp-l{font-size:11px;color:var(--tm);margin-top:3px}
+.scan-btn{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+
+/* 扫描结果 */
+.res-list{background:var(--card);border-radius:var(--r-md);padding:18px;box-shadow:var(--shadow);
+  border:1px solid var(--border);margin-top:16px;text-align:left}
+.res-list h3{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.res-list h3 svg{width:15px;height:15px;fill:var(--danger)}
+.res-item{display:flex;align-items:flex-start;gap:11px;padding:12px;border-radius:10px;
+  animation:slideIn .38s var(--ease-out);
+  background:var(--danger-bg);border:1px solid var(--danger-bd);margin-bottom:8px}
+.res-item:last-of-type{margin-bottom:14px}
+.res-item .ri-ic{width:30px;height:30px;border-radius:8px;background:var(--danger);display:flex;
+  align-items:center;justify-content:center;flex-shrink:0}
+.res-item .ri-ic svg{width:15px;height:15px;fill:#fff}
+.res-item .ri-body{flex:1;min-width:0}
+.res-item .res-act{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* ============ 模态框 ============ */
+.modal-mask{position:fixed;inset:0;background:rgba(8,10,22,.55);display:none;align-items:center;
+  justify-content:center;z-index:120;padding:20px}
+.modal-mask.open{display:flex;animation:fadeIn .2s var(--ease)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);width:100%;
+  max-width:540px;max-height:84vh;display:flex;flex-direction:column;border:1px solid var(--border);
+  animation:modalIn .3s var(--ease-out)}
+@keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;
+  border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-hd h3{font-size:14.5px;font-weight:600}
+.modal-hd .mh-sub{font-size:11.5px;color:var(--ts);margin-top:3px;line-height:1.5}
+.modal-x{background:none;border:none;font-size:22px;color:var(--tm);cursor:pointer;line-height:1;
+  padding:0 2px;font-family:inherit;transition:.2s var(--ease);flex-shrink:0}
+.modal-x:hover{color:var(--text)}
+.modal-bd{padding:18px 20px;overflow-y:auto;flex:1}
+.modal-ft{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0}
+.pick-row{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap}
+.pick-row .btn-o,.pick-row .btn-g{margin:0;cursor:pointer}
+.pick-hint{font-size:11px;color:var(--tm);line-height:1.5;margin-top:8px}
+.tgt-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto}
+.tgt-item{display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:10px;
+  background:var(--bg);border:1px solid var(--border);animation:slideIn .28s var(--ease-out)}
+.tgt-item .tg-ic{width:28px;height:28px;border-radius:8px;background:var(--accent-bg);display:flex;
+  align-items:center;justify-content:center;flex-shrink:0}
+.tgt-item .tg-ic svg{width:14px;height:14px;fill:var(--accent)}
+.tgt-item .tg-body{flex:1;min-width:0}
+.tgt-item .tg-name{font-size:12px;font-weight:600;word-break:break-all}
+.tgt-item .tg-path{font-size:10.5px;color:var(--tm);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;margin-top:1px}
+.tgt-item .tg-kind{font-size:10px;padding:2px 7px;border-radius:5px;background:var(--accent-bg);
+  color:var(--accent);font-weight:600;flex-shrink:0}
+.res-item .ri-t{font-size:12.5px;font-weight:600;margin-bottom:2px;color:var(--danger)}
+.res-item .ri-p{font-size:11px;color:var(--ts);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+
+/* ============ 修复页 ============ */
+.repair-ic{width:92px;height:92px;margin:0 auto 20px}
+.repair-ic svg{width:100%;height:100%}
+.repair-note{background:var(--warn-bg);border-radius:10px;padding:15px 18px 15px 34px;text-align:left;
+  margin-top:20px;border:1px solid var(--warn-bd)}
+.repair-note h4{font-size:12px;font-weight:600;color:var(--warn);margin-bottom:8px}
+.repair-note li{font-size:11.5px;color:var(--ts);margin-bottom:5px;list-style:disc}
+.repair-note li:last-child{margin-bottom:0}
+.rep-item{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:10px;
+  background:var(--bg);border:1px solid var(--border);margin-bottom:8px;font-size:12px;
+  animation:slideIn .38s var(--ease-out);transition:.25s var(--ease)}
+.rep-item:last-child{margin-bottom:0}
+.rep-item .ri-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:.25s var(--ease)}
+.rep-item.busy{background:var(--accent-bg);border-color:var(--accent)}
+.rep-item.busy .ri-dot{background:var(--accent);animation:dotPulse 1s ease-in-out infinite}
+@keyframes dotPulse{0%,100%{transform:scale(.7);opacity:.5}50%{transform:scale(1.25);opacity:1}}
+.rep-item .ri-name{flex:1;min-width:0}
+.rep-item .ri-st{font-size:11px;font-weight:600;flex-shrink:0;transition:.25s var(--ease)}
+
+/* ============ 防护页 ============ */
+.protect-pg{max-width:760px;margin:0 auto}
+.protect-hd{margin-bottom:18px}
+.protect-hd h1{font-size:21px;font-weight:700;margin-bottom:5px;letter-spacing:-.3px}
+.protect-hd p{font-size:13px;color:var(--ts);line-height:1.6;max-width:70ch}
+.protect-alert{background:var(--danger-bg);border:1px solid var(--danger-bd);border-radius:var(--r-md);
+  padding:16px 18px;margin-bottom:18px;display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+.protect-alert .ic{width:34px;height:34px;background:var(--danger);border-radius:50%;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0}
+.protect-alert .ic svg{width:17px;height:17px;fill:#fff}
+.protect-alert .al-body{flex:1;min-width:180px}
+.protect-alert .al-t{font-size:13px;font-weight:600;color:var(--danger);margin-bottom:3px}
+.protect-alert .al-d{font-size:12px;color:var(--ts);line-height:1.5}
+.protect-scard{background:var(--card);border-radius:var(--r-md);padding:18px 20px;box-shadow:var(--shadow);
+  margin-bottom:16px;display:flex;align-items:center;gap:14px;border:1px solid var(--border);transition:.25s var(--ease)}
+.protect-scard .ps-ic{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.25s var(--ease)}
+.protect-scard .ps-ic svg{width:23px;height:23px;transition:.25s var(--ease)}
+.protect-scard h3{font-size:14.5px;font-weight:600;margin-bottom:3px}
+.protect-scard p{font-size:12px;color:var(--ts);line-height:1.5}
+.pcards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.pc{background:var(--card);border-radius:var(--r-md);padding:18px;box-shadow:var(--shadow);
+  transition:.22s var(--ease);border:1px solid var(--border)}
+.pc:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.pc .pc-ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:13px}
+.pc .pc-ic svg{width:19px;height:19px}
+.pc h3{font-size:14px;font-weight:600;margin-bottom:5px}
+.pc p{font-size:12px;color:var(--ts);line-height:1.6}
+
+/* ============ 列表项（隔离区/信任区）============ */
+.trust-pg,.quar-pg{max-width:760px;margin:0 auto}
+.list-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+.list-count{font-size:12px;color:var(--ts)}
+.list-count b{color:var(--text);font-size:13px}
+.q-list{display:flex;flex-direction:column;gap:9px}
+.q-item{background:var(--card);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);
+  border:1px solid var(--border);display:flex;align-items:center;gap:13px;transition:.2s var(--ease);
+  animation:slideIn .3s var(--ease-out)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.q-item:hover{border-color:var(--accent);box-shadow:var(--shadow-md)}
+.q-item .qi-ic{width:34px;height:34px;border-radius:9px;background:var(--danger-bg);display:flex;
+  align-items:center;justify-content:center;flex-shrink:0}
+.q-item .qi-ic svg{width:16px;height:16px;fill:var(--danger)}
+.q-item.trust .qi-ic{background:var(--success-bg)}
+.q-item.trust .qi-ic svg{fill:var(--success)}
+.qi-body{flex:1;min-width:0}
+.qi-name{font-size:12.5px;font-weight:600;margin-bottom:2px;word-break:break-all}
+.qi-meta{font-size:11px;color:var(--tm);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+.qi-tags{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
+.chip{font-size:10px;padding:2px 7px;border-radius:5px;font-weight:600}
+.qi-act{display:flex;gap:7px;flex-shrink:0}
+
+.empty{background:var(--card);border-radius:var(--r-md);padding:52px 24px;text-align:center;
+  box-shadow:var(--shadow);border:1px dashed var(--border)}
+.empty svg{width:50px;height:50px;fill:var(--tm);margin-bottom:15px;opacity:.45}
+.empty h3{font-size:14px;font-weight:600;margin-bottom:5px}
+.empty p{font-size:12px;color:var(--ts);margin-bottom:18px}
+.add-row{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap}
+.add-row input[type=text]{flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--border);
+  border-radius:10px;background:var(--card);color:var(--text);font-size:12.5px;font-family:inherit;transition:.2s var(--ease)}
+.add-row input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+.trust-opt{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;
+  margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.to-item{display:flex;align-items:flex-start;gap:10px;cursor:pointer;user-select:none}
+.to-item input{position:absolute;opacity:0;width:0;height:0}
+.to-box{width:16px;height:16px;border:1.5px solid var(--border);border-radius:5px;flex-shrink:0;margin-top:2px;
+  transition:.2s var(--ease);position:relative;background:var(--bg)}
+.to-item input:checked+.to-box{background:var(--accent);border-color:var(--accent)}
+.to-item input:checked+.to-box::after{content:'';position:absolute;left:4.5px;top:1.5px;width:4px;height:8px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(42deg)}
+.to-item input:focus-visible+.to-box{box-shadow:0 0 0 3px var(--accent-bg)}
+.to-txt{flex:1;min-width:0}
+.to-txt b{display:block;font-size:12.5px;font-weight:600}
+.to-txt small{display:block;font-size:11px;color:var(--ts);line-height:1.5;margin-top:2px}
+.trust-sub{font-size:10px;padding:2px 7px;border-radius:5px;font-weight:600;background:var(--warn-bg);color:var(--warn)}
+.trust-sub.on{background:var(--success-bg);color:var(--success)}
+
+/* ============ 通知 ============ */
+.notify-pg{max-width:760px;margin:0 auto}
+.notify-list{display:flex;flex-direction:column;gap:10px}
+.nf{background:var(--card);border-radius:var(--r);padding:15px 17px;box-shadow:var(--shadow);
+  transition:.2s var(--ease);cursor:pointer;border:1px solid var(--border);position:relative}
+.nf:hover{border-color:var(--accent);box-shadow:var(--shadow-md)}
+.nf.read{opacity:.62}
+.nf.read:hover{opacity:.85}
+.nf::before{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;
+  background:var(--accent);opacity:0;transition:.2s var(--ease)}
+.nf:not(.read)::before{opacity:1}
+.nf-hd{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+.nf-hd .nt{font-size:10.5px;padding:3px 9px;border-radius:5px;font-weight:700}
+.nf-hd .tm{margin-left:auto;font-size:11px;color:var(--tm)}
+.nf h3{font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:7px}
+.nf p{font-size:12px;color:var(--ts);line-height:1.6;word-break:break-word}
+.nf-act{display:flex;gap:7px;margin-top:11px}
+.unread-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+
+/* ============ 设置 ============ */
+.settings-pg{max-width:640px;margin:0 auto}
+.st-group{background:var(--card);border-radius:var(--r-md);margin-bottom:11px;box-shadow:var(--shadow);
+  overflow:hidden;border:1px solid var(--border)}
+.st-item{padding:15px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.18s var(--ease)}
+.st-item.clickable:hover{background:var(--card-h)}
+.st-item svg.ico{width:18px;height:18px;fill:var(--accent);flex-shrink:0}
+.st-item>span:first-of-type{font-size:13px;font-weight:500;flex:1}
+.st-item .arrow{color:var(--tm);font-size:13px;transition:.25s var(--ease);flex-shrink:0}
+.st-item.open .arrow{transform:rotate(90deg)}
+.st-body{padding:2px 18px 14px;border-top:1px solid var(--border);display:none}
+.st-body.open{display:block}
+.st-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;
+  border-bottom:1px solid var(--border);gap:14px}
+.st-row:last-child{border:none}
+.st-row .rl{font-size:12px;color:var(--ts);flex:1;min-width:0}
+.st-row .rl small{display:block;color:var(--tm);font-size:10.5px;margin-top:2px;line-height:1.4}
+.st-row .rv{font-size:13px;font-weight:600;flex-shrink:0;text-align:right}
+.st-row .rv.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.st-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 15px;
+  border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s var(--ease);
+  border:none;font-family:inherit;white-space:nowrap}
+.st-btn-g{background:var(--accent);color:#fff;box-shadow:var(--btn-shadow)}
+.st-btn-g:hover{background:var(--accent2);box-shadow:var(--btn-shadow-h)}
+.st-btn-o{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.st-btn-o:hover{border-color:var(--accent);box-shadow:var(--btn-shadow)}
+.st-btn:disabled{opacity:.5;cursor:not-allowed}
+.comp-hd{display:flex;align-items:center;gap:12px;margin:14px 0 12px}
+.comp-hd .ci{width:38px;height:38px;background:var(--accent-bg);border-radius:10px;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0}
+.comp-hd .ci svg{width:19px;height:19px;fill:var(--accent)}
+.comp-hd .ct-t{font-size:13px;font-weight:600}
+.comp-hd .ct-d{font-size:11px;color:var(--ts);line-height:1.5;margin-top:2px}
+.comp-msg{font-size:12px;padding:10px 0;border-top:1px solid var(--border);margin-top:10px;
+  display:flex;align-items:center;gap:7px}
+.comp-msg .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.comp-err{font-size:11px;color:var(--tm);padding:0 0 4px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+/* ============ 开关 / 下拉 ============ */
+.toggle{position:relative;width:42px;height:23px;cursor:pointer;flex-shrink:0}
+.toggle input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+.toggle .track{position:absolute;top:0;left:0;width:42px;height:23px;background:var(--border);
+  border-radius:12px;transition:.25s var(--ease)}
+.toggle .thumb{position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;background:#fff;
+  border-radius:50%;transition:.25s var(--ease);box-shadow:0 1px 3px rgba(0,0,0,.25);pointer-events:none}
+.toggle input:checked+.track{background:var(--accent)}
+.toggle input:checked+.track+.thumb{transform:translateX(19px)}
+.toggle input:focus-visible+.track{box-shadow:0 0 0 3px var(--accent-bg)}
+.st-select{padding:7px 11px;border:1px solid var(--border);border-radius:9px;background:var(--bg);
+  color:var(--text);font-size:12px;cursor:pointer;outline:none;font-family:inherit;transition:.2s var(--ease)}
+.st-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+.st-select:hover{border-color:var(--accent)}
+
+/* ============ Toast ============ */
+.toast-wrap{position:fixed;right:24px;bottom:24px;display:flex;flex-direction:column;gap:10px;z-index:99;pointer-events:none}
+.toast{display:flex;align-items:flex-start;gap:11px;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r-md);padding:13px 16px;box-shadow:var(--shadow-lg);min-width:260px;max-width:360px;
+  animation:toastIn .35s var(--ease-out);pointer-events:auto}
+.toast.out{animation:toastOut .25s var(--ease) forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(24px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateX(24px) scale(.96)}}
+.toast .ti{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.toast .ti svg{width:12px;height:12px;fill:#fff}
+.toast .tt{font-size:12.5px;font-weight:600;margin-bottom:2px}
+.toast .td{font-size:11.5px;color:var(--ts);line-height:1.5}
+
+/* ============ 响应式兜底 ============ */
+@media(max-width:1080px){.fcards{grid-template-columns:repeat(3,1fr);gap:10px}.log-wrap{max-height:220px}}
+@media(max-width:900px){
+  .sidebar{width:64px;min-width:64px}
+  .logo-text,.ni span:not(.badge),.sbot .ver,.theme-btn span{display:none}
+  .logo{justify-content:center;padding:18px 0 14px}
+  .ni{justify-content:center;padding:12px 0}
+  .ni .badge{position:absolute;top:4px;right:6px;margin:0}
+  .theme-btn{justify-content:center}
+  .ct,.hdr{padding-left:16px;padding-right:16px}
+  .pcards,.scan-types{grid-template-columns:1fr}
+  .hero{flex-direction:column;text-align:center;align-items:center}
+  .hero-l .st{margin:0 auto}
+  .btns{justify-content:center}
+}
+@media(max-width:560px){.fcards{grid-template-columns:1fr}.sp-row{gap:24px}}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+    <div class="logo-text"><b>千戮</b><small>Antivirus</small></div>
+  </div>
+  <nav class="nav" id="nav">
+    <div class="ni on" data-p="home" tabindex="0" role="button"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span class="ni-t" data-i18n="nav.home">首页</span></div>
+    <div class="ni" data-p="scan" tabindex="0" role="button"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><span class="ni-t" data-i18n="nav.scan">病毒扫描</span></div>
+    <div class="ni" data-p="repair" tabindex="0" role="button"><svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg><span class="ni-t" data-i18n="nav.repair">系统修复</span></div>
+    <div class="ni" data-p="protect" tabindex="0" role="button"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg><span class="ni-t" data-i18n="nav.protect">实时防护</span></div>
+    <div class="ni" data-p="trust" tabindex="0" role="button"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg><span class="ni-t" data-i18n="nav.trust">信任区</span></div>
+    <div class="ni" data-p="quar" tabindex="0" role="button"><svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 0h-4V4h4v2z"/></svg><span class="ni-t" data-i18n="nav.quar">隔离区</span></div>
+    <div class="ni" data-p="notify" tabindex="0" role="button"><svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg><span class="ni-t" data-i18n="nav.notify">通知中心</span><span class="badge" id="notifyBadge">1</span></div>
+    <div class="ni" data-p="settings" tabindex="0" role="button"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><span class="ni-t" data-i18n="nav.settings">设置</span></div>
+  </nav>
+  <div class="sbot">
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="切换主题"><svg viewBox="0 0 24 24" id="tIcon"><path id="tIconPath" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/></svg><span id="tText" data-i18n="theme.toDark">暗色模式</span></button>
+    <div class="ver"><span class="dot"></span><span data-i18n="app.beta">内测版</span> v0.1.254</div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="hdr">
+    <div class="hdr-l"><span class="hdr-title" id="pageTitle">首页</span><!-- <span class="hdr-sub" id="pageSub"></span> --></div>
+  </div>
+  <div class="ct">
+
+<!-- ============ 首页 ============ -->
+<div class="pg on" id="p-home">
+  <div class="hero">
+    <div class="hero-l">
+      <h1 id="heroTitle" data-i18n="home.title">您的电脑已受保护</h1>
+      <p data-i18n="home.desc">千戮正在守护您的电脑，帮您远离病毒、木马和勒索软件。</p>
+      <div class="st st-ok" id="heroStat"><span class="dot"></span><span id="heroStatText" data-i18n="home.protectOn">防护已开启</span></div>
+      <div class="btns">
+        <button class="btn-g" onclick="quickScan()"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><span data-i18n="home.quickScan">快速扫描</span></button>
+        <button class="btn-o" onclick="go('repair')"><span data-i18n="home.goRepair">系统修复</span></button>
+      </div>
+    </div>
+    <div class="hero-r">
+      <div class="shield3d"><svg viewBox="0 0 100 100" width="108" height="108"><defs><linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#5b7cfa"/><stop offset="100%" style="stop-color:#0B0E27"/></linearGradient></defs><path d="M50 8L12 24v24c0 22.5 15.8 43.5 38 48 22.2-4.5 38-25.5 38-48V24L50 8z" fill="url(#sg)" opacity=".1"/><path d="M50 16L18 30v20c0 18.5 13.2 35.8 32 40 18.8-4.2 32-21.5 32-40V30L50 16z" fill="url(#sg)" opacity=".25"/><path d="M50 24L22 36v16c0 14.5 10.6 28.1 28 32 17.4-3.9 28-17.5 28-32V36L50 24z" fill="url(#sg)"/><path d="M42.5 50.5l-6-6 3-3 3 3 10-10 3 3-13 13z" fill="#fff"/></svg></div>
+    </div>
+  </div>
+
+  <div class="fcards">
+    <div class="fc" onclick="go('scan')">
+      <div class="fc-hd"><div class="ic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" style="fill:var(--accent)"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></div><span class="tag" style="background:var(--accent-bg);color:var(--accent)" data-i18n="home.avail">可用</span></div>
+      <h3 data-i18n="nav.scan">病毒扫描</h3><p data-i18n="home.cardScan">一键检查是否安全</p>
+    </div>
+    <div class="fc" onclick="go('protect')">
+      <div class="fc-hd"><div class="ic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" style="fill:var(--accent)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div><span class="tag" id="fcProtectTag" style="background:var(--accent-bg);color:var(--accent)">已开启</span></div>
+      <h3 data-i18n="nav.protect">实时防护</h3><p data-i18n="home.cardProtect">全天候守护，自动处理威胁</p>
+    </div>
+    <div class="fc" id="dbCard" onclick="updateDB()">
+      <div class="fc-hd"><div class="ic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" style="fill:var(--accent)"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79 2.73 2.71 7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58 3.51-3.47 9.14-3.49 12.65 0L21 3v7.12z"/></svg></div><span class="tag" id="dbTag" style="background:var(--accent-bg);color:var(--accent)">最新</span></div>
+      <h3 data-i18n="home.cardDb">病毒库更新</h3><p id="dbText">上次更新 08/29 21:18</p>
+    </div>
+  </div>
+
+  <div class="overview">
+    <div class="ov-hd">
+      <h3><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 00-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21a9 9 0 000-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span data-i18n="home.logs">日志</span></h3>
+      <button class="btn-o btn-sm" onclick="clearLogs()" data-i18n="home.logClear">清空</button>
+    </div>
+    <div class="log-wrap" id="logWrap"></div>
+  </div>
+</div>
+
+<!-- ============ 病毒扫描 ============ -->
+<div class="pg" id="p-scan">
+  <div class="page-hd"><h1 data-i18n="nav.scan">病毒扫描</h1><p data-i18n="scan.desc">选择扫描范围，发现的风险文件会列出并支持一键隔离。</p></div>
+  <div class="scan-types" id="scanTypes">
+    <div class="scan-type" id="quickScan" data-t="quick" onclick="selectScanType('quick')"><svg viewBox="0 0 24 24"><path d="M12 2C17.52 2 22 6.48 22 12s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zm0 18c4.41 0 8-3.59 8-8s-3.59-8-8-8-8 3.59-8 8 3.59 8 8 8z"/></svg><h3 data-i18n="scan.quick">快速扫描</h3><p data-i18n="scan.quickDesc">检查系统关键部件，快速发现潜在威胁。</p></div>
+    <div class="scan-type" id="fullScan" data-t="full" onclick="selectScanType('full')"><svg viewBox="0 0 24 24"><path d="M12 4.41L7.41 9 12 13.59 16.59 9 12 4.41zm0 5.18L10.41 9 12 7.41 13.59 9 12 9.59zm0 6.36L7.41 15 12 19.59 16.59 15 12 9.59zm0 3.18L10.41 15 12 13.41 13.59 15 12 15.59z"/></svg><h3 data-i18n="scan.full">全盘扫描</h3><p data-i18n="scan.fullDesc">彻底检查所有文件和文件夹，确保系统无恙。</p></div>
+    <div class="scan-type" id="customScan" data-t="custom" onclick="selectScanType('custom')"><svg viewBox="0 0 24 24"><path d="M12 19c4.41 0 8-3.59 8-8s-3.59-8-8-8-8 3.59-8 8 3.59 8 8 8zm0-14a6 6 0 100 12 6 6 0 000-12zm0 10a4 4 0 110-8 4 4 0 010 8zm1-4h2v-2h-2V9h-2v2H9v2h2v2h2v-2z"/></svg><h3 data-i18n="scan.custom">自定义扫描</h3><p data-i18n="scan.customDesc">选择特定文件或目录进行扫描。</p></div>
+  </div>
+  <div class="scan-pg">
+    <div class="scan-box">
+      <div class="scan-ic" id="scanIc"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></div>
+      <h2 id="scanTitle" data-i18n="scan.ready">准备扫描</h2>
+      <p id="scanSub" data-i18n="scan.readyDesc">请选择上方的扫描类型，然后点击开始扫描。</p>
+      <div class="pbar-w" id="scanBar" style="display:none">
+        <div class="pbar-i"><span id="scanPct">0%</span><span id="scanCnt">已扫描 0 个文件</span></div>
+        <div class="pbar"><div class="pbar-f" id="pbarF" style="width:0%"></div></div>
+      </div>
+      <div class="sp-row" id="scanStats" style="display:none">
+        <div class="sp"><div class="sp-v" id="spF">0</div><div class="sp-l" data-i18n="scan.scanned">已扫描对象</div></div>
+        <div class="sp"><div class="sp-v" id="spT2">0</div><div class="sp-l" data-i18n="scan.threats">发现威胁</div></div>
+        <div class="sp"><div class="sp-v" id="spT">00:00</div><div class="sp-l" data-i18n="scan.remain">预计剩余</div></div>
+      </div>
+      <div class="scan-btn">
+        <button class="btn-g" id="startScanBtn" onclick="onStartClick()" disabled data-i18n="scan.start">开始扫描</button>
+        <button class="btn-r" id="stopScanBtn" onclick="stopScan()" style="display:none" data-i18n="scan.stop">停止扫描</button>
+      </div>
+    </div>
+    <div id="scanResult"></div>
+  </div>
+</div>
+
+<!-- ============ 系统修复 ============ -->
+<div class="pg" id="p-repair">
+  <div class="page-hd"><h1 data-i18n="nav.repair">系统修复</h1><p data-i18n="repair.desc">修复被破坏的系统设置，或检查并修复系统文件，帮助电脑恢复正常。</p></div>
+  <div class="repair-pg">
+    <div class="repair-box">
+      <div class="repair-ic" id="repairIc"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--border)" stroke-width="5"/><circle cx="50" cy="50" r="44" fill="none" stroke="var(--accent)" stroke-width="5" stroke-dasharray="70 206" stroke-linecap="round" transform="rotate(-90 50 50)" id="repairRing"><animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="2s" repeatCount="indefinite"/></circle><path d="M40 51l-6-6 3-3 3 3 9-9 3 3-12 12z" fill="var(--accent)"/><path d="M57 51l6 6-3 3-3-3-9 9-3-3 12-12z" fill="var(--accent)"/></svg></div>
+      <h2 id="repairTitle" data-i18n="repair.ready">准备系统修复</h2>
+      <p id="repairSub" data-i18n="repair.readyDesc">点击下方按钮开始检查并修复系统异常。</p>
+      <div class="pbar-w" id="repairBar" style="display:none">
+        <div class="pbar-i"><span id="repairPct">0%</span><span id="repairStep">准备中…</span></div>
+        <div class="pbar"><div class="pbar-f" id="repairBarF" style="width:0%"></div></div>
+      </div>
+      <div class="repair-note" id="repairNote" style="display:none">
+        <h4 data-i18n="repair.notice">修复进行中，请注意</h4>
+        <ul>
+          <li data-i18n="repair.n1">请勿重启、关机或强制断电</li>
+          <li data-i18n="repair.n2">请勿让电脑进入睡眠或休眠</li>
+          <li data-i18n="repair.n3">笔记本请尽量接上电源</li>
+          <li data-i18n="repair.n4">请耐心等待至完成，不要中途关机</li>
+        </ul>
+      </div>
+      <div class="scan-btn" style="margin-top:20px">
+        <button class="btn-g" id="repairBtn" onclick="startRepair()" data-i18n="repair.start">开始修复</button>
+      </div>
+    </div>
+    <div id="repairResult"></div>
+  </div>
+</div>
+
+<!-- ============ 实时防护 ============ -->
+<div class="pg" id="p-protect">
+  <div class="protect-pg">
+    <div class="protect-hd"><h1 data-i18n="nav.protect">实时防护</h1><p data-i18n="protect.desc">全天候守护您的电脑。发现病毒、木马或勒索软件时，自动拦截并处理，无需您手动扫描。</p></div>
+    <div class="protect-scard" id="protectStatus">
+      <div class="ps-ic" id="psIcon" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" style="fill:var(--accent)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+      <div><h3 id="psTitle" data-i18n="protect.running">防护正常运行中</h3><p id="psDesc" data-i18n="protect.runningDesc">防护组件已就绪，正在实时监控</p></div>
+      <label class="toggle"><input type="checkbox" id="protectToggle" checked onchange="toggleProtect(this)" aria-label="实时防护开关"><span class="track"></span><span class="thumb"></span></label>
+    </div>
+    <div id="protectAlertBox" style="display:none">
+      <div class="protect-alert">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>
+        <div class="al-body"><div class="al-t" data-i18n="protect.offTitle">防护已关闭</div><div class="al-d" data-i18n="protect.offDesc">实时防护已被关闭，系统处于无保护状态。建议立即开启防护。</div></div>
+        <button class="btn-g" onclick="enableProtect()" data-i18n="protect.enable">开启防护</button>
+      </div>
+    </div>
+    <div class="pcards">
+      <div class="pc"><div class="pc-ic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" style="fill:var(--accent)"><path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z"/></svg></div>
+        <div style="display:flex;align-items:center;gap:10px"><h3 style="flex:1" data-i18n="protect.m1">打开即防护</h3>
+        <label class="toggle"><input type="checkbox" id="modOpen" checked onchange="toggleModule('open',this)"><span class="track"></span><span class="thumb"></span></label></div>
+        <p data-i18n="protect.m1d">程序一启动就会被自动检查。确认有风险时立即拦截，不耽误您正常使用电脑。</p></div>
+      <div class="pc"><div class="pc-ic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" style="fill:var(--accent)"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+        <div style="display:flex;align-items:center;gap:10px"><h3 style="flex:1" data-i18n="protect.m2">勒索防护</h3>
+        <label class="toggle"><input type="checkbox" id="modRansom" checked onchange="toggleModule('ransom',this)"><span class="track"></span><span class="thumb"></span></label></div>
+        <p data-i18n="protect.m2d">发现可疑程序改动重要文件时，会先保护原件。确认是勒索软件后，自动恢复被改动的文件。</p></div>
+      <div class="pc"><div class="pc-ic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" style="fill:var(--accent)"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5 0 1.93-1.57 3.5-3.5 3.5s-3.5-1.57-3.5-3.5c0-1.93 1.57-3.5 3.5-3.5zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg></div>
+        <div style="display:flex;align-items:center;gap:10px"><h3 style="flex:1" data-i18n="protect.m3">自动清除威胁</h3>
+        <label class="toggle"><input type="checkbox" id="modAuto" checked onchange="toggleModule('auto',this)"><span class="track"></span><span class="thumb"></span></label></div>
+        <p data-i18n="protect.m3d">发现病毒后自动结束相关程序、清理残留文件，并尽量把电脑恢复到安全状态。</p></div>
+      <div class="pc"><div class="pc-ic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" style="fill:var(--accent)"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></div>
+        <div style="display:flex;align-items:center;gap:10px"><h3 style="flex:1" data-i18n="protect.m4">安静守护</h3>
+        <label class="toggle"><input type="checkbox" id="modQuiet" checked onchange="toggleModule('quiet',this)"><span class="track"></span><span class="thumb"></span></label></div>
+        <p data-i18n="protect.m4d">平时不会打扰您。只有真正处理威胁时，才会在右下角轻提示一下。</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 信任区 ============ -->
+<div class="pg" id="p-trust">
+  <div class="trust-pg">
+    <div class="page-hd"><h1 data-i18n="nav.trust">信任区</h1><p data-i18n="trust.desc">管理您信任的文件和程序，已添加的项目将不会被扫描拦截。</p></div>
+    <div class="add-row">
+      <input type="text" id="trustInput" placeholder="输入文件或文件夹路径" data-i18n-ph="trust.ph">
+      <button class="btn-g btn-sm" onclick="addTrustByPath()" data-i18n="trust.add">添加</button>
+      <label class="btn-o btn-sm" style="margin:0"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg><span data-i18n="trust.pick">选择文件</span>
+        <input type="file" id="trustFile" multiple style="display:none" onchange="addTrustByFile(event)"></label>
+      <label class="btn-o btn-sm" style="margin:0"><svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg><span data-i18n="trust.pickFolder">选择文件夹</span>
+        <input type="file" id="trustDir" webkitdirectory multiple style="display:none" onchange="addTrustByDir(event)"></label>
+    </div>
+    <div class="trust-opt">
+      <label class="to-item"><input type="checkbox" id="trustRecursive" checked><span class="to-box"></span>
+        <span class="to-txt"><b data-i18n="trust.recursive">包括子文件夹</b><small data-i18n="trust.recursiveDesc">勾选后，该文件夹下的所有子目录也会一并纳入信任</small></span></label>
+    </div>
+    <div class="list-hd"><span class="list-count" id="trustCount"></span></div>
+    <div id="trustList"></div>
+  </div>
+</div>
+
+<!-- ============ 隔离区 ============ -->
+<div class="pg" id="p-quar">
+  <div class="quar-pg">
+    <div class="page-hd"><h1 data-i18n="nav.quar">隔离区</h1><p data-i18n="quar.desc">查看和管理已隔离的威胁文件，隔离的文件无法运行。</p></div>
+    <div class="list-hd">
+      <span class="list-count" id="quarCount"></span>
+      <button class="btn-d btn-sm" id="quarClear" onclick="clearQuar()" data-i18n="quar.clear">清空隔离区</button>
+    </div>
+    <div id="quarList"></div>
+  </div>
+</div>
+
+<!-- ============ 通知中心 ============ -->
+<div class="pg" id="p-notify">
+  <div class="notify-pg">
+    <div class="page-hd"><h1 data-i18n="nav.notify">通知中心</h1><p data-i18n="notify.desc">查看安全通知和操作记录</p></div>
+    <div class="list-hd">
+      <span class="list-count" id="notifyCount"></span>
+      <button class="btn-o btn-sm" onclick="clearAllRead()" data-i18n="notify.readAll">全部标为已读</button>
+    </div>
+    <div class="notify-list" id="notifyList"></div>
+  </div>
+</div>
+
+<!-- ============ 设置 ============ -->
+<div class="pg" id="p-settings">
+  <div class="settings-pg">
+    <div class="page-hd"><h1 data-i18n="nav.settings">设置</h1></div>
+
+    <div class="st-group">
+      <div class="st-item clickable" onclick="togSt(this)"><svg class="ico" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><span data-i18n="set.general">通用</span><span class="arrow">›</span></div>
+      <div class="st-body">
+        <div class="st-row"><span class="rl" data-i18n="set.lang">当前语言<small data-i18n="set.langDesc">切换后界面立即生效</small></span>
+          <select class="st-select" id="langSelect" onchange="changeLanguage(this)"><option value="zh">简体中文</option><option value="en">English</option></select></div>
+        <div class="st-row"><span class="rl" data-i18n="set.autoUpdate">自动更新<small data-i18n="set.autoUpdateDesc">自动下载并安装病毒库与程序更新</small></span>
+          <label class="toggle"><input type="checkbox" id="setAutoUpdate" checked onchange="toggleSetting(this,'autoUpdate')"><span class="track"></span><span class="thumb"></span></label></div>
+        <div class="st-row"><span class="rl" data-i18n="set.boot">开机自启<small data-i18n="set.bootDesc">随系统启动，尽早进入防护状态</small></span>
+          <label class="toggle"><input type="checkbox" id="setBoot" checked onchange="toggleSetting(this,'boot')"><span class="track"></span><span class="thumb"></span></label></div>
+      </div>
+    </div>
+
+    <div class="st-group">
+      <div class="st-item clickable" onclick="togSt(this)"><svg class="ico" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg><span data-i18n="set.privacy">隐私</span><span class="arrow">›</span></div>
+      <div class="st-body">
+        <div class="st-row"><span class="rl" data-i18n="set.telemetry">匿名使用数据<small data-i18n="set.telemetryDesc">帮助我们改进产品，不含个人身份信息</small></span>
+          <label class="toggle"><input type="checkbox" id="setTelemetry" onchange="toggleSetting(this,'telemetry')"><span class="track"></span><span class="thumb"></span></label></div>
+        <div class="st-row"><span class="rl" data-i18n="set.cloud">云检查<small data-i18n="set.cloudDesc">对可疑文件使用云端引擎二次鉴定</small></span>
+          <label class="toggle"><input type="checkbox" id="setCloud" checked onchange="toggleSetting(this,'cloud')"><span class="track"></span><span class="thumb"></span></label></div>
+      </div>
+    </div>
+
+    <div class="st-group">
+      <div class="st-item clickable" onclick="togSt(this)"><svg class="ico" viewBox="0 0 24 24"><path d="M7 5h10v2h2V3c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v4h2V5zm8.41 11.59L20 12l-4.59-4.41L14 8.83 17.17 12 14 15.17l1.41 1.42zM10 15.17L6.83 12 10 8.83 8.59 7.41 4 12l4.59 4.59L10 15.17zM17 19H7v-2H5v4c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-4h-2v2z"/></svg><span data-i18n="set.lab">实验性功能</span><span class="arrow">›</span></div>
+      <div class="st-body">
+        <div class="st-row"><span class="rl" data-i18n="set.beta">Beta 功能<small data-i18n="set.betaDesc">提前体验尚未稳定的新能力</small></span>
+          <label class="toggle"><input type="checkbox" id="setBeta" onchange="toggleSetting(this,'beta')"><span class="track"></span><span class="thumb"></span></label></div>
+      </div>
+    </div>
+
+    <div class="st-group">
+      <div class="st-item clickable open" onclick="togSt(this)"><svg class="ico" viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg><span data-i18n="set.component">防护组件</span><span class="arrow">›</span></div>
+      <div class="st-body open">
+        <div class="comp-hd"><div class="ci"><svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg></div>
+          <div><div class="ct-t" data-i18n="set.component">防护组件</div><div class="ct-d" data-i18n="set.componentDesc">检查防护是否完整。有问题会说明原因，并可一键修复。</div></div>
+          <div style="margin-left:auto;display:flex;gap:8px;flex-shrink:0"><button class="st-btn st-btn-o" id="compCheckBtn" onclick="checkComponent()" data-i18n="set.check">一键检测</button><button class="st-btn st-btn-g" id="compFixBtn" onclick="fixComponent()" disabled data-i18n="set.fix">一键修复</button></div>
+        </div>
+        <div class="comp-msg" id="compMsg"><span class="dot" id="compDot" style="background:var(--warn)"></span><span id="compText" data-i18n="set.compIdle">尚未检测，点击「一键检测」检查防护组件状态。</span></div>
+        <div class="comp-err" id="compErr" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="st-group">
+      <div class="st-item clickable open" onclick="togSt(this)"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span data-i18n="set.about">关于</span><span class="arrow">›</span></div>
+      <div class="st-body open">
+        <div class="st-row"><span class="rl" data-i18n="set.version">产品版本</span><span class="rv">0.1.254</span></div>
+        <div class="st-row"><span class="rl" data-i18n="set.db">病毒库</span><span class="rv mono" id="dbVer">1787888005</span></div>
+        <div class="st-row"><span class="rl" data-i18n="set.lastUpdate">上次更新</span><span class="rv" id="lastUpdate">08/29 21:08</span></div>
+        <div class="st-row"><span class="rl" data-i18n="set.storage">本地数据<small data-i18n="set.storageDesc">设置与列表保存在浏览器中</small></span><button class="st-btn st-btn-o" onclick="resetAll()" data-i18n="set.reset">恢复默认</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </div>
+</main>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- 通用确认框 -->
+<div class="modal-mask" id="confirmModal" onclick="if(event.target===this)closeConfirm(false)">
+  <div class="modal" style="max-width:400px" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+    <div class="modal-hd">
+      <div><h3 id="cfTitle"></h3><div class="mh-sub" id="cfSub"></div></div>
+      <button class="modal-x" onclick="closeConfirm(false)" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-bd">
+      <div style="display:flex;gap:13px;align-items:flex-start">
+        <div class="cf-ic" id="cfIc"><svg viewBox="0 0 24 24"><path id="cfIcPath" d=""></path></svg></div>
+        <div style="flex:1;min-width:0"><div id="cfText" style="font-size:12.5px;color:var(--ts);line-height:1.65"></div>
+          <label class="cf-chk" id="cfChkWrap" style="display:none">
+            <input type="checkbox" id="cfChk"><span></span><span id="cfChkLabel"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-o" id="cfNo" onclick="closeConfirm(false)"></button>
+      <button class="btn-g" id="cfYes" onclick="closeConfirm(true)"></button>
+    </div>
+  </div>
+</div>
+
+<!-- 病毒库更新 -->
+<div class="modal-mask" id="dbModal" onclick="if(event.target===this)closeDBModal()">
+  <div class="modal" style="max-width:460px" role="dialog" aria-modal="true" aria-labelledby="dbModalTitle">
+    <div class="modal-hd">
+      <div><h3 id="dbModalTitle" data-i18n="home.cardDb">病毒库更新</h3><div class="mh-sub" data-i18n="db.sub">保持病毒库最新，才能识别最新的威胁。</div></div>
+      <button class="modal-x" onclick="closeDBModal()" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-bd">
+      <div class="upd-stage">
+        <div class="upd-ic" id="updIc"><svg viewBox="0 0 24 24"><path id="updIcPath" d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79 2.73 2.71 7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58 3.51-3.47 9.14-3.49 12.65 0L21 3v7.12z"/></svg></div>
+        <div class="upd-title" id="updTitle" data-i18n="db.ready">准备更新</div>
+        <div class="upd-sub" id="updSub" data-i18n="db.readyDesc">点击下方按钮检查是否有新版本。</div>
+        <div class="upd-bar" id="updBar" style="display:none">
+          <div class="pbar"><div class="pbar-f act" id="updBarF" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="upd-meta">
+        <div class="um"><div class="um-k" data-i18n="set.db">病毒库</div><div class="um-v mono" id="updVer">1787888005</div></div>
+        <div class="um"><div class="um-k" data-i18n="set.lastUpdate">上次更新</div><div class="um-v" id="updLast">08/29 21:08</div></div>
+      </div>
+      <div class="upd-log" id="updLog"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-o" onclick="closeDBModal()" data-i18n="scan.pickClose">取消</button>
+      <button class="btn-g" id="updBtn" onclick="runUpdate()"><span id="updBtnText" data-i18n="db.check">检查更新</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 自定义扫描：选择文件/文件夹 -->
+<div class="modal-mask" id="customModal" onclick="if(event.target===this)closeCustomPicker()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="customPickTitle">
+    <div class="modal-hd">
+      <div><h3 id="customPickTitle" data-i18n="scan.pickTitle">选择扫描目标</h3><div class="mh-sub" data-i18n="scan.pickSub">添加一个或多个文件、文件夹，确认后开始扫描。</div></div>
+      <button class="modal-x" onclick="closeCustomPicker()" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-bd">
+      <div class="pick-row">
+        <label class="btn-o btn-sm"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg><span data-i18n="scan.pickFile">选择文件</span>
+          <input type="file" id="customFile" multiple style="display:none" onchange="addCustomFiles(event)"></label>
+        <label class="btn-o btn-sm"><svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg><span data-i18n="scan.pickDir">选择文件夹</span>
+          <input type="file" id="customDir" webkitdirectory multiple style="display:none" onchange="addCustomDir(event)"></label>
+      </div>
+      <div class="add-row">
+        <input type="text" id="customPathInput" placeholder="输入文件或文件夹路径" data-i18n-ph="scan.pickPh">
+        <button class="btn-g btn-sm" onclick="addCustomPath()" data-i18n="scan.pickAdd">添加</button>
+      </div>
+      <div class="list-hd">
+        <span class="list-count" id="customCount"></span>
+        <button class="btn-d btn-sm" onclick="clearCustomTargets()" data-i18n="scan.pickClear">清空</button>
+      </div>
+      <div id="customTargetList"></div>
+      <div class="pick-hint" data-i18n="scan.pickHint">浏览器安全限制：选择本地文件时只能获取到文件名。如需完整路径，请在上方输入框中手动填写。</div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-o" onclick="closeCustomPicker()" data-i18n="scan.pickClose">取消</button>
+      <button class="btn-g" id="customOkBtn" onclick="confirmCustom()" disabled data-i18n="scan.pickOk">开始扫描</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================= 工具 ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+function nowStr(){const d=new Date();return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());}
+function shortDate(){const d=new Date();return pad(d.getMonth()+1)+'/'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());}
+function fmtTime(s){return pad(Math.floor(s/60))+':'+pad(s%60);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+/* 路径是否看起来像文件夹：无扩展名、或以分隔符结尾、或是盘符根 */
+function hasExt(p){return /\.[^\\/]+$/.test(p);}
+function isDirPath(p){
+  const t=String(p).trim();
+  if(!t)return false;
+  if(/[\\/]$/.test(t))return true;
+  if(/^[a-zA-Z]:[\\/]?$/i.test(t))return true;
+  return !hasExt(t);
+}
+
+/* ================= 多语言 ================= */
+const I18N={
+ zh:{
+  'app.beta':'内测版','theme.toDark':'暗色模式','theme.toLight':'亮色模式',
+  'nav.home':'首页','nav.scan':'病毒扫描','nav.repair':'系统修复','nav.protect':'实时防护',
+  'nav.trust':'信任区','nav.quar':'隔离区','nav.notify':'通知中心','nav.settings':'设置',
+  'home.title':'您的电脑已受保护','home.titleOff':'您的电脑未受保护','home.desc':'千戮 正在守护您的电脑，帮您远离病毒、木马和勒索软件。',
+  'home.protectOn':'防护已开启','home.protectOff':'防护已关闭','home.quickScan':'快速扫描','home.goRepair':'系统修复',
+  'home.avail':'可用','home.cardScan':'一键检查是否安全','home.cardProtect':'全天候守护，自动处理威胁','home.cardDb':'病毒库更新','home.dbLatest':'最新','home.dbChecking':'检查中','home.dbUpdated':'刚更新','home.dbLastUpdate':'上次更新 ','home.dbFail':'重试',
+  'home.logs':'日志','home.logClear':'清空','home.logEmpty':'暂无日志记录','home.dark':'暗色模式','home.light':'亮色模式',
+  'cf.no':'取消','cf.yes':'确定','cf.warnTitle':'请确认操作','cf.step':'第 {a}/{b} 步',
+  'trust.pickFolder':'选择文件夹','trust.recursive':'包括子文件夹','trust.noRecursive':'不含子文件夹',
+  'trust.recursiveDesc':'勾选后，该文件夹下的所有子目录也会一并纳入信任',
+  'trust.folderAdded':'已添加文件夹','trust.fileAdded':'已添加文件','trust.addedN':'已添加 {n} 项',
+  'notify.delConfirm':'删除这条通知？','notify.delConfirmDesc':'删除后将无法恢复，该记录也会从日志中移除。',
+  'notify.deleted':'通知已删除','quar.clearConfirm':'确定清空隔离区？','quar.clearConfirmDesc':'所有隔离文件将被彻底删除，此操作无法撤销。',
+  'scan.cancelConfirm1':'确定取消处理吗？','scan.cancelConfirm1Desc':'取消后这些威胁将保持原状，不会被隔离。',
+  'scan.cancelConfirm2':'再次确认是否取消？','scan.cancelConfirm2Desc':'取消后这些威胁文件仍可被运行，建议立即处理。',
+  'db.sub':'保持病毒库最新，才能识别最新的威胁。','db.ready':'准备更新','db.readyDesc':'点击下方按钮检查是否有新版本。',
+  'db.check':'检查更新','db.checking':'正在检查更新…','db.downloading':'正在下载病毒库…','db.installing':'正在安装更新…',
+  'db.done':'已是最新版本','db.doneDesc':'当前病毒库已经是最新，无需更新。','db.updated':'更新完成',
+  'db.updatedDesc':'病毒库已更新至最新版本。','db.fail':'更新失败','db.failDesc':'无法连接更新服务器，请检查网络后重试。',
+  'db.retry':'重试','db.finish':'完成','db.newCount':'新增特征','db.size':'下载大小',
+  'db.l1':'连接更新服务器…','db.l2':'检查云端版本号…','db.l3':'下载增量特征包…','db.l4':'校验文件签名…','db.l5':'应用更新到本地…',
+  'log.scanStart':'开始{type}，正在检查系统','log.scanDone':'{type}完成，未发现威胁','log.scanFound':'{type}发现 {n} 个威胁',
+  'log.scanStop':'{type}已被手动停止','log.quarAll':'一键处理完成，隔离 <b>{n}</b> 个威胁',
+  'log.trustAdd':'已将 <b>{n}</b> 加入信任区','log.trustDel':'已将 <b>{n}</b> 移出信任区',
+  'log.restore':'已恢复文件 <b>{n}</b>','log.del':'已彻底删除 <b>{n}</b>','log.quarClear':'已清空隔离区（{n} 项）',
+  'log.protectOn':'实时防护已开启','log.protectOff':'实时防护已关闭','log.moduleOn':'已开启「{n}」','log.moduleOff':'已关闭「{n}」',
+  'log.repairStart':'开始系统修复','log.repairDone':'系统修复完成，修复 {n} 项','log.repairPartial':'系统修复完成，{n} 项需重启后处理',
+  'log.dbOk':'病毒库已更新至 <b>{n}</b>','log.dbLatest':'病毒库已是最新','log.dbFail':'病毒库更新失败，请稍后重试',
+  'log.compCheck':'执行防护组件检测','log.compOk':'防护组件检测完成，未发现问题','log.compBad':'防护组件异常：防护驱动未加载',
+  'log.compFixed':'防护组件修复完成','log.compFail':'防护组件修复失败','log.notifyRead':'已将全部通知标为已读',
+  'log.theme':'已切换为{n}','log.lang':'界面语言已切换',
+  'scan.desc':'选择扫描范围，发现的风险文件会列出并支持一键隔离。',
+  'scan.quick':'快速扫描','scan.quickDesc':'检查系统关键部件，快速发现潜在威胁。',
+  'scan.full':'全盘扫描','scan.fullDesc':'彻底检查所有文件和文件夹，确保系统无恙。',
+  'scan.custom':'自定义扫描','scan.customDesc':'选择特定文件或目录进行扫描。',
+  'scan.ready':'准备扫描','scan.readyDesc':'请选择上方的扫描类型，然后点击开始扫描。',
+  'scan.start':'开始扫描','scan.stop':'停止扫描','scan.rescan':'重新扫描','scan.scanned':'已扫描对象','scan.threats':'发现威胁','scan.remain':'预计剩余',
+  'scan.scanning':'正在扫描','scan.runningDesc':'正在检查您的系统，请稍候…','scan.clean':'扫描完成','scan.cleanDesc':'未发现任何威胁，您的系统安全。',
+  'scan.found':'发现威胁','scan.stopped':'扫描已停止','scan.stoppedDesc':'扫描已被手动停止，已扫描部分未发现异常。',
+  'scan.resultTitle':'需要处理的项目','scan.handleAll':'一键处理全部','scan.cancel':'取消','scan.done':'已处理',
+  'scan.cancelled':'已取消处理','scan.cancelledDesc':'未处理的威胁已保留在系统中',
+  'scan.pickTitle':'选择扫描目标','scan.pickSub':'添加一个或多个文件、文件夹，确认后开始扫描。',
+  'scan.pickFile':'选择文件','scan.pickDir':'选择文件夹','scan.pickAdd':'添加','scan.pickClear':'清空',
+  'scan.pickPh':'输入文件或文件夹路径，如 C:\\Users\\Administrator\\Downloads',
+  'scan.pickEmpty':'还没有选择任何目标','scan.pickEmptyDesc':'请至少添加一个文件或文件夹',
+  'scan.pickHint':'浏览器安全限制：选择本地文件时只能获取到文件名。如需完整路径，请在上方输入框中手动填写。',
+  'scan.pickOk':'开始扫描','scan.pickClose':'取消','scan.targetFile':'文件','scan.targetDir':'文件夹',
+  'scan.targetCount':'已选择 <b>{n}</b> 个目标','scan.scanningTargets':'正在扫描 {n} 个指定目标…',
+  'repair.desc':'修复被破坏的系统设置，或检查并修复系统文件，帮助电脑恢复正常。',
+  'repair.ready':'准备系统修复','repair.readyDesc':'点击下方按钮开始检查并修复系统异常。','repair.start':'开始修复','repair.recheck':'重新检查',
+  'repair.running':'正在进行系统修复…','repair.done':'修复完成','repair.doneDesc':'已修复全部可修复的异常项。','repair.partial':'部分修复完成','repair.partialDesc':'部分项目需要重启电脑后再次修复。',
+  'repair.notice':'修复进行中，请注意','repair.n1':'请勿重启、关机或强制断电','repair.n2':'请勿让电脑进入睡眠或休眠',
+  'repair.n3':'笔记本请尽量接上电源','repair.n4':'请耐心等待至完成，不要中途关机',
+  'repair.resultTitle':'修复明细','repair.fixed':'已修复','repair.skipped':'需重启',
+  'protect.desc':'全天候守护您的电脑。发现病毒、木马或勒索软件时，自动拦截并处理，无需您手动扫描。',
+  'protect.running':'防护正常运行中','protect.runningDesc':'防护组件已就绪，正在实时监控',
+  'protect.off':'防护已关闭','protect.offDesc':'防护组件未运行，系统处于无保护状态',
+  'protect.offTitle':'防护已关闭','protect.offTip':'实时防护已被关闭，系统处于无保护状态。建议立即开启防护。','protect.enable':'开启防护',
+  'protect.m1':'打开即防护','protect.m1d':'程序一启动就会被自动检查。确认有风险时立即拦截，不耽误您正常使用电脑。',
+  'protect.m2':'勒索防护','protect.m2d':'发现可疑程序改动重要文件时，会先保护原件。确认是勒索软件后，自动恢复被改动的文件。',
+  'protect.m3':'自动清除威胁','protect.m3d':'发现病毒后自动结束相关程序、清理残留文件，并尽量把电脑恢复到安全状态。',
+  'protect.m4':'安静守护','protect.m4d':'平时不会打扰您。只有真正处理威胁时，才会在右下角轻提示一下。',
+  'trust.desc':'管理您信任的文件和程序，已添加的项目将不会被扫描拦截。','trust.add':'添加','trust.pick':'选择文件','trust.ph':'输入文件或文件夹路径，如 D:\\Games\\Steam',
+  'trust.empty':'暂无信任项','trust.emptyDesc':'您可以将安全的程序添加到信任区','trust.removed':'已移出信任区','trust.added':'已加入信任区','trust.dup':'该路径已在信任区中',
+  'quar.desc':'查看和管理已隔离的威胁文件，隔离的文件无法运行。','quar.clear':'清空隔离区',
+  'quar.empty':'暂无隔离项','quar.emptyDesc':'没有被隔离的威胁文件','quar.restore':'恢复','quar.delete':'删除',
+  'quar.restored':'文件已恢复','quar.deleted':'文件已彻底删除','quar.cleared':'隔离区已清空','quar.clearConfirm':'确定清空隔离区？','quar.clearConfirmDesc':'所有隔离文件将被彻底删除，此操作无法撤销。',
+  'notify.desc':'查看安全通知和操作记录','notify.readAll':'全部标为已读','notify.read':'标为已读','notify.readDone':'已读','notify.delete':'删除',
+  'notify.count':'共 <b>{n}</b> 条通知，<b>{u}</b> 条未读','notify.empty':'暂无通知',
+  'set.general':'通用','set.lang':'当前语言','set.langDesc':'切换后界面立即生效','set.autoUpdate':'自动更新','set.autoUpdateDesc':'自动下载并安装病毒库与程序更新',
+  'set.boot':'开机自启','set.bootDesc':'随系统启动，尽早进入防护状态','set.privacy':'隐私','set.telemetry':'匿名使用数据','set.telemetryDesc':'帮助我们改进产品，不含个人身份信息',
+  'set.cloud':'云检查','set.cloudDesc':'对可疑文件使用云端引擎二次鉴定','set.lab':'实验性功能','set.beta':'Beta 功能','set.betaDesc':'提前体验尚未稳定的新能力',
+  'set.component':'防护组件','set.componentDesc':'检查防护是否完整。有问题会说明原因，并可一键修复。','set.check':'一键检测','set.checking':'检测中…','set.fix':'一键修复','set.fixing':'修复中…',
+  'set.compIdle':'尚未检测，点击「一键检测」检查防护组件状态。','set.compOk':'防护组件完整，未发现问题。','set.compBad':'检测到：防护驱动未加载。可一键修复。','set.compFixing':'正在修复防护组件，请稍候…','set.compFixed':'防护组件已修复，防护能力已恢复。','set.compErr':'仍有问题：missing_filter','set.compFail':'云端修复失败，请稍后重试。',
+  'set.about':'关于','set.version':'产品版本','set.db':'病毒库','set.lastUpdate':'上次更新','set.storage':'本地数据','set.storageDesc':'设置与列表保存在浏览器中','set.reset':'恢复默认','set.resetConfirm':'确定恢复默认设置？本地的隔离区与信任区记录也会一并清空。',
+  'set.on':'开启','set.off':'关闭','set.saved':'设置已保存','set.resetDone':'已恢复默认设置',
+  'home.on':'开启','home.off':'关闭',
+  'quar.count':'已隔离 <b>{n}</b> 项','trust.count':'共 <b>{n}</b> 个信任项'
+ },
+ en:{
+  'app.beta':'Beta','theme.toDark':'Dark mode','theme.toLight':'Light mode',
+  'nav.home':'Home','nav.scan':'Scan','nav.repair':'Repair','nav.protect':'Protection',
+  'nav.trust':'Trust','nav.quar':'Quarantine','nav.notify':'Notifications','nav.settings':'Settings',
+  'home.title':'Your PC is protected','home.titleOff':'Your PC is unprotected','home.desc':'千戮 keeps your PC safe from viruses, trojans and ransomware.',
+  'home.protectOn':'Protection on','home.protectOff':'Protection off','home.quickScan':'Quick scan','home.goRepair':'System repair',
+  'home.avail':'Ready','home.cardScan':'Check safety in one click','home.cardProtect':'Always-on defense, threats handled automatically','home.cardDb':'Signature update','home.dbLatest':'Latest','home.dbChecking':'Checking','home.dbUpdated':'Just updated','home.dbLastUpdate':'Last update ','home.dbFail':'Retry',
+  'home.logs':'Activity log','home.logClear':'Clear','home.logEmpty':'No log entries yet','home.dark':'dark mode','home.light':'light mode',
+  'cf.no':'Cancel','cf.yes':'Confirm','cf.warnTitle':'Please confirm','cf.step':'Step {a}/{b}',
+  'trust.pickFolder':'Choose folder','trust.recursive':'Include subfolders','trust.noRecursive':'Subfolders excluded',
+  'trust.recursiveDesc':'When checked, all subdirectories under this folder are trusted as well',
+  'trust.folderAdded':'Folder added','trust.fileAdded':'File added','trust.addedN':'{n} item(s) added',
+  'notify.delConfirm':'Delete this notification?','notify.delConfirmDesc':'This cannot be undone. The entry will also disappear from the log.',
+  'notify.deleted':'Notification deleted','quar.clearConfirm':'Empty the quarantine?','quar.clearConfirmDesc':'All quarantined files will be deleted permanently. This cannot be undone.',
+  'scan.cancelConfirm1':'Cancel handling these items?','scan.cancelConfirm1Desc':'These threats will be left untouched and will not be quarantined.',
+  'scan.cancelConfirm2':'Are you sure you want to cancel?','scan.cancelConfirm2Desc':'Cancelled threats stay active on your PC. We recommend handling them now.',
+  'db.sub':'Keep signatures current so the newest threats can be detected.','db.ready':'Ready to update','db.readyDesc':'Click the button below to check for a newer version.',
+  'db.check':'Check for updates','db.checking':'Checking for updates…','db.downloading':'Downloading signatures…','db.installing':'Installing update…',
+  'db.done':'Already up to date','db.doneDesc':'Your signatures are current. No update needed.','db.updated':'Update complete',
+  'db.updatedDesc':'Signatures updated to the latest version.','db.fail':'Update failed','db.failDesc':'Could not reach the update server. Check your connection and retry.',
+  'db.retry':'Retry','db.finish':'Done','db.newCount':'New signatures','db.size':'Download size',
+  'db.l1':'Connecting to update server…','db.l2':'Checking cloud version…','db.l3':'Downloading incremental package…','db.l4':'Verifying file signature…','db.l5':'Applying update locally…',
+  'log.scanStart':'Started {type}, checking your system','log.scanDone':'{type} finished, no threats found','log.scanFound':'{type} found {n} threat(s)',
+  'log.scanStop':'{type} stopped manually','log.quarAll':'Handled all, quarantined <b>{n}</b> threat(s)',
+  'log.trustAdd':'Added <b>{n}</b> to trust list','log.trustDel':'Removed <b>{n}</b> from trust list',
+  'log.restore':'Restored <b>{n}</b>','log.del':'Deleted <b>{n}</b> permanently','log.quarClear':'Emptied quarantine ({n} items)',
+  'log.protectOn':'Real-time protection enabled','log.protectOff':'Real-time protection disabled','log.moduleOn':'Enabled "{n}"','log.moduleOff':'Disabled "{n}"',
+  'log.repairStart':'Started system repair','log.repairDone':'Repair complete, {n} item(s) fixed','log.repairPartial':'Repair complete, {n} item(s) need a restart',
+  'log.dbOk':'Signatures updated to <b>{n}</b>','log.dbLatest':'Signatures are already up to date','log.dbFail':'Signature update failed, please retry later',
+  'log.compCheck':'Running protection component check','log.compOk':'Component check passed, no issues','log.compBad':'Component issue: protection driver not loaded',
+  'log.compFixed':'Components repaired','log.compFail':'Component repair failed','log.notifyRead':'Marked all notifications as read',
+  'log.theme':'Switched to {n}','log.lang':'Interface language switched',
+  'scan.desc':'Pick a scan range. Any risky files found will be listed and can be quarantined in one click.',
+  'scan.quick':'Quick scan','scan.quickDesc':'Scans critical system areas for common threats.',
+  'scan.full':'Full scan','scan.fullDesc':'Deep scan of every file and folder on this PC.',
+  'scan.custom':'Custom scan','scan.customDesc':'Scan specific files or folders you choose.',
+  'scan.ready':'Ready to scan','scan.readyDesc':'Choose a scan type above, then start scanning.',
+  'scan.start':'Start scan','scan.stop':'Stop scan','scan.rescan':'Scan again','scan.scanned':'Objects scanned','scan.threats':'Threats found','scan.remain':'Time remaining',
+  'scan.scanning':'Scanning','scan.runningDesc':'Checking your system, please wait…','scan.clean':'Scan complete','scan.cleanDesc':'No threats found. Your system is secure.',
+  'scan.found':'Threats found','scan.stopped':'Scan stopped','scan.stoppedDesc':'Scan stopped manually. Nothing suspicious in scanned items.',
+  'scan.resultTitle':'Items needing action','scan.handleAll':'Handle all','scan.cancel':'Cancel','scan.done':'Handled',
+  'scan.cancelled':'Handling cancelled','scan.cancelledDesc':'Unhandled threats remain on your system',
+  'scan.pickTitle':'Choose scan targets','scan.pickSub':'Add one or more files or folders, then confirm to start scanning.',
+  'scan.pickFile':'Choose files','scan.pickDir':'Choose folder','scan.pickAdd':'Add','scan.pickClear':'Clear',
+  'scan.pickPh':'Enter a file or folder path, e.g. C:\\Users\\Administrator\\Downloads',
+  'scan.pickEmpty':'No targets selected','scan.pickEmptyDesc':'Add at least one file or folder',
+  'scan.pickHint':'Browser security limits: picking a local file only exposes its name. Type the full path above if you need it.',
+  'scan.pickOk':'Start scan','scan.pickClose':'Cancel','scan.targetFile':'File','scan.targetDir':'Folder',
+  'scan.targetCount':'<b>{n}</b> target(s) selected','scan.scanningTargets':'Scanning {n} selected target(s)…',
+  'repair.desc':'Repair broken system settings and system files to bring your PC back to normal.',
+  'repair.ready':'Ready to repair','repair.readyDesc':'Click the button below to check and repair system issues.','repair.start':'Start repair','repair.recheck':'Check again',
+  'repair.running':'Repairing your system…','repair.done':'Repair complete','repair.doneDesc':'All repairable issues have been fixed.','repair.partial':'Partially repaired','repair.partialDesc':'Some items need another repair after restart.',
+  'repair.notice':'While repairing','repair.n1':'Do not restart, shut down or cut power','repair.n2':'Do not let the PC sleep or hibernate',
+  'repair.n3':'Keep a laptop plugged in','repair.n4':'Wait until it finishes, do not power off',
+  'repair.resultTitle':'Repair details','repair.fixed':'Fixed','repair.skipped':'Needs restart',
+  'protect.desc':'Round-the-clock protection. Viruses, trojans and ransomware are blocked and handled automatically.',
+  'protect.running':'Protection is running','protect.runningDesc':'Components ready, monitoring in real time',
+  'protect.off':'Protection is off','protect.offDesc':'Components not running, your system is unprotected',
+  'protect.offTitle':'Protection is off','protect.offTip':'Real-time protection is off. Turn it on now.','protect.enable':'Turn on',
+  'protect.m1':'Scan on launch','protect.m1d':'Programs are checked as they start. Risks are blocked instantly without slowing you down.',
+  'protect.m2':'Ransomware shield','protect.m2d':'Important files are backed up before suspicious changes. Originals are restored if ransomware is confirmed.',
+  'protect.m3':'Auto cleanup','protect.m3d':'Malicious processes are stopped, leftovers removed, and your PC returned to a safe state.',
+  'protect.m4':'Quiet mode','protect.m4d':'You will not be disturbed. Only real threats show a brief toast.',
+  'trust.desc':'Manage trusted files and programs. Trusted items will never be blocked.','trust.add':'Add','trust.pick':'Choose file','trust.ph':'Enter a file or folder path, e.g. D:\\Games\\Steam',
+  'trust.empty':'No trusted items','trust.emptyDesc':'Add programs you know are safe','trust.removed':'Removed from trust list','trust.added':'Added to trust list','trust.dup':'That path is already trusted',
+  'quar.desc':'Review and manage quarantined threats. Quarantined files cannot run.','quar.clear':'Empty quarantine',
+  'quar.empty':'Nothing quarantined','quar.emptyDesc':'No threats have been quarantined','quar.restore':'Restore','quar.delete':'Delete',
+  'quar.restored':'File restored','quar.deleted':'File deleted permanently','quar.cleared':'Quarantine emptied','quar.clearConfirm':'Empty the quarantine?','quar.clearConfirmDesc':'All quarantined files will be deleted permanently. This cannot be undone.',
+  'notify.desc':'Security alerts and activity log','notify.readAll':'Mark all read','notify.read':'Mark read','notify.readDone':'Read','notify.delete':'Delete',
+  'notify.count':'<b>{n}</b> notifications, <b>{u}</b> unread','notify.empty':'No notifications',
+  'set.general':'General','set.lang':'Language','set.langDesc':'Applies instantly','set.autoUpdate':'Automatic updates','set.autoUpdateDesc':'Download and install signature and app updates automatically',
+  'set.boot':'Run at startup','set.bootDesc':'Start with Windows for earliest protection','set.privacy':'Privacy','set.telemetry':'Anonymous usage data','set.telemetryDesc':'Helps us improve. Contains no personal identifiers',
+  'set.cloud':'Cloud lookup','set.cloudDesc':'Second opinion from the cloud engine on suspicious files','set.lab':'Labs','set.beta':'Beta features','set.betaDesc':'Try new capabilities before they are stable',
+  'set.component':'Protection components','set.componentDesc':'Verify protection integrity. Problems are explained and can be fixed in one click.','set.check':'Check now','set.checking':'Checking…','set.fix':'Repair','set.fixing':'Repairing…',
+  'set.compIdle':'Not checked yet. Click "Check now" to verify components.','set.compOk':'All components intact. No issues found.','set.compBad':'Found: protection driver not loaded. Repair available.','set.compFixing':'Repairing components, please wait…','set.compFixed':'Components repaired. Protection fully restored.','set.compErr':'Remaining issue: missing_filter','set.compFail':'Cloud repair failed. Please try again later.',
+  'set.about':'About','set.version':'Version','set.db':'Signatures','set.lastUpdate':'Last update','set.storage':'Local data','set.storageDesc':'Settings and lists are stored in your browser','set.reset':'Reset','set.resetConfirm':'Reset to defaults? Quarantine and trust records will also be cleared.',
+  'set.on':'On','set.off':'Off','set.saved':'Setting saved','set.resetDone':'Defaults restored',
+  'home.on':'On','home.off':'Off',
+  'quar.count':'<b>{n}</b> items quarantined','trust.count':'<b>{n}</b> trusted items'
+ }};
+let lang='zh';
+const T=(k,vars)=>{let s=(I18N[lang]&&I18N[lang][k])||(I18N.zh[k]!==undefined?I18N.zh[k]:k);
+  if(vars)Object.keys(vars).forEach(v=>{s=s.split('{'+v+'}').join(vars[v])});return s;};
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=T(el.dataset.i18n)});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=T(el.dataset.i18nPh)});
+  const d=document.documentElement;
+  $('tText').textContent=T(d.getAttribute('data-theme')==='dark'?'theme.toLight':'theme.toDark');
+  updateThemeIcon();
+  if($('pageTitle').dataset.key)$('pageTitle').textContent=T($('pageTitle').dataset.key);
+  renderHome();renderQuar();renderTrust();renderNotify();renderScanResult();renderRepairResult();renderCustomTargets();renderLogs();
+  if($('compMsg').dataset.k)$('compText').textContent=T($('compMsg').dataset.k);
+}
+function changeLanguage(sel){
+  lang=sel.value;save();
+  document.documentElement.lang=lang==='en'?'en':'zh-CN';
+  applyI18n();
+  toast('ok',T('set.lang'),sel.options[sel.selectedIndex].text);
+  pushLog('info',T('log.lang'));
+}
+
+/* ================= 状态 ================= */
+const DEFAULT={
+  theme:'light',lang:'zh',protect:true,modules:{open:true,ransom:true,auto:true,quiet:true},
+  settings:{autoUpdate:true,boot:true,telemetry:false,cloud:true,beta:false},
+  quar:[
+    {id:'q1',name:'MEMZ.exe',virus:'Cloud.Heur.MEMZ',path:'C:\\Users\\Administrator\\AppData\\Local\\Temp\\7z0C8800CB2\\MEMZ.exe',date:'2026/8/30 02:09',size:'1.2 MB'},
+    {id:'q2',name:'09707.exe',virus:'千戮.Generic.Trojan.1091',path:'C:\\Users\\Administrator\\AppData\\Local\\Temp\\7zE46A80C13\\09707.exe',date:'2026/8/30 02:11',size:'486 KB'}
+  ],
+  trust:[{id:'t1',name:'notepad.exe',path:'C:\\Windows\\notepad.exe',date:'2026/8/29 14:22'}],
+  notifies:[
+    {id:'n1',type:'info',title:'防护已开启',desc:'实时防护已恢复运行。',time:'2026/8/30 02:13:00',read:false},
+    {id:'n2',type:'warn',title:'防护已关闭',desc:'实时防护已被手动关闭，系统处于无保护状态。可从托盘菜单重新开启。',time:'2026/8/30 02:12:47',read:true},
+    {id:'n3',type:'warn',title:'即将关闭实时防护',desc:'请在安全桌面确认是否关闭',time:'2026/8/30 02:12:45',read:true},
+    {id:'n4',type:'threat',title:'已恢复被关闭的防护',desc:'检测到通过系统组件改写安全开关，已自动恢复：HKLM: 重新开启防火墙(DomainProfile/StandardProfile/PublicProfile) 写键进程（未处置）：C:\\Windows\\System32\\svchost.exe',time:'2026/8/30 02:12:32',read:true},
+    {id:'n5',type:'threat',title:'检测到了 千戮.Generic.Trojan.1091',desc:'千戮.Generic.Trojan.1091 | C:\\Users\\Administrator\\AppData\\Local\\Temp\\7zE46A80C13\\09707.exe，已清除 1 个恶意文件',time:'2026/8/30 02:11:12',read:true},
+    {id:'n6',type:'threat',title:'已拦截并清除威胁',desc:'云端检测 | C:\\Users\\Administrator\\AppData\\Local\\Temp\\7z0C8800CB2\\MEMZ.exe，已清除 1 个恶意文件',time:'2026/8/30 02:09:35',read:true}
+  ],
+  db:{ver:'1787888005',last:'08/29 21:08',state:'latest'},compOk:false,
+  logs:[
+    {id:'lg1',level:'info',text:'实时防护已开启',t:'02:13:00'},
+    {id:'lg2',level:'warn',text:'实时防护已关闭',t:'02:12:47'},
+    {id:'lg3',level:'err',text:'已拦截并清除威胁 <b>MEMZ.exe</b>',t:'02:11:12'},
+    {id:'lg4',level:'info',text:'病毒库已更新至 <b>1787888005</b>',t:'21:08:00'}
+  ]
+};
+let S=null;
+const KEY='千戮-x-state';
+const bool=(v,def)=>typeof v==='boolean'?v:!!def;
+const arr=(v,def)=>Array.isArray(v)?v:JSON.parse(JSON.stringify(def));
+/* 逐字段兜底：旧版本/被篡改的存档不会让界面显示 undefined */
+function load(){
+  let raw=null;
+  try{const r=localStorage.getItem(KEY);if(r)raw=JSON.parse(r)}catch(e){raw=null}
+  if(!raw||typeof raw!=='object'){S=JSON.parse(JSON.stringify(DEFAULT));return}
+  S=JSON.parse(JSON.stringify(DEFAULT));
+  S.theme=(raw.theme==='dark'||raw.theme==='light')?raw.theme:DEFAULT.theme;
+  S.lang=(raw.lang==='en'||raw.lang==='zh')?raw.lang:DEFAULT.lang;
+  S.protect=bool(raw.protect,DEFAULT.protect);
+  S.compOk=bool(raw.compOk,DEFAULT.compOk);
+  S.modules=Object.assign({},DEFAULT.modules,raw.modules||{});
+  Object.keys(DEFAULT.modules).forEach(k=>{S.modules[k]=bool(S.modules[k],DEFAULT.modules[k])});
+  S.settings=Object.assign({},DEFAULT.settings,raw.settings||{});
+  Object.keys(DEFAULT.settings).forEach(k=>{S.settings[k]=bool(S.settings[k],DEFAULT.settings[k])});
+  /* db 是对象，缺字段要逐个补齐，否则会显示 undefined */
+  S.db=Object.assign({},DEFAULT.db,(raw.db&&typeof raw.db==='object')?raw.db:{});
+  if(typeof S.db.ver!=='string'||!S.db.ver)S.db.ver=DEFAULT.db.ver;
+  if(typeof S.db.last!=='string'||!S.db.last)S.db.last=DEFAULT.db.last;
+  S.db.state=['latest','updated','fail'].indexOf(S.db.state)>=0?S.db.state:DEFAULT.db.state;
+  S.quar=arr(raw.quar,DEFAULT.quar);
+  S.trust=arr(raw.trust,DEFAULT.trust);
+  S.notifies=arr(raw.notifies,DEFAULT.notifies);
+  S.logs=arr(raw.logs,DEFAULT.logs).filter(l=>l&&l.text).map(l=>({
+    id:l.id||uid(),level:LOG_COLOR[l.level]?l.level:'info',text:String(l.text),t:l.t||'--:--:--'
+  }));
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+async function resetAll(){
+  const r=await askConfirm({title:T('set.reset'),desc:T('set.resetConfirm'),tone:'danger',yes:T('set.reset')});
+  if(!r.ok)return;
+  /* 先停掉进行中的扫描/修复，否则新数据会被旧流程继续写入 */
+  if(scanTimer)stopScan();
+  if(repairTimer){clearInterval(repairTimer);repairTimer=null}
+  repairShown=0;repairNeedReboot=null;repairDone=false;
+  scanResults=[];scanFoundCount=0;scanDone=false;scanType=null;customTargets=[];
+  clearScanResult();
+  initRepairResult();
+  $('repairBtn').disabled=false;$('repairBtn').textContent=T('repair.start');
+  $('repairNote').style.display='none';$('repairBar').style.display='none';
+  $('repairTitle').textContent=T('repair.ready');
+  $('repairSub').textContent=T('repair.readyDesc');
+  $('repairBarF').style.width='0%';
+  resetScanType();
+  S=JSON.parse(JSON.stringify(DEFAULT));save();
+  document.documentElement.setAttribute('data-theme',S.theme);
+  updateThemeIcon();
+  lang=S.lang;
+  $('langSelect').value=S.lang;
+  ['autoUpdate','boot','telemetry','cloud','beta'].forEach(k=>{const el=$('set'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.checked=!!S.settings[k]});
+  ['open','ransom','auto','quiet'].forEach(k=>{const el=$('mod'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.checked=!!S.modules[k]});
+  $('protectToggle').checked=S.protect;
+  applyI18n();renderProtect();
+  $('compMsg').dataset.k='set.compIdle';$('compText').textContent=T('set.compIdle');
+  $('compDot').style.background='var(--warn)';$('compErr').style.display='none';$('compFixBtn').disabled=true;
+  /* 不再追加日志：重置后日志应保持默认状态，提示由 Toast 承担 */
+  toast('ok',T('set.reset'),T('set.resetDone'));
+}
+
+/* ================= Toast ================= */
+function toast(type,title,desc){
+  const colors={ok:'var(--success)',warn:'var(--warn)',err:'var(--danger)',info:'var(--accent)'};
+  const icons={
+    ok:'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    warn:'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
+    err:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z',
+    info:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'
+  };
+  const el=document.createElement('div');
+  el.className='toast';
+  el.innerHTML='<div class="ti" style="background:'+(colors[type]||colors.info)+'"><svg viewBox="0 0 24 24"><path d="'+(icons[type]||icons.info)+'"/></svg></div>'+
+    '<div style="flex:1;min-width:0"><div class="tt">'+esc(title)+'</div>'+(desc?'<div class="td">'+esc(desc)+'</div>':'')+'</div>';
+  const wrap=$('toastWrap');
+  wrap.appendChild(el);
+  /* 最多保留 4 条，超出移除最旧的，避免连续操作时堆积 */
+  while(wrap.children.length>4){
+    const old=wrap.firstElementChild;
+    if(old===el)break;
+    old.remove();
+  }
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),260)},3200);
+}
+
+/* ================= 导航 ================= */
+const TITLES={home:'nav.home',scan:'nav.scan',repair:'nav.repair',protect:'nav.protect',trust:'nav.trust',quar:'nav.quar',notify:'nav.notify',settings:'nav.settings'};
+const SUBS={home:'home.logs',scan:'scan.desc',repair:'repair.desc',protect:'protect.desc',trust:'trust.desc',quar:'quar.desc',notify:'notify.desc',settings:'set.general'};
+function go(id){
+  document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.dataset.p===id));
+  document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('on',p.id==='p-'+id));
+  $('pageTitle').dataset.key=TITLES[id];$('pageTitle').textContent=T(TITLES[id]);
+  // $('pageSub').textContent=(SUBS[id]&&T(SUBS[id]))||'';
+  const ct=document.querySelector('.ct');if(ct)ct.scrollTop=0;
+}
+document.querySelectorAll('.ni').forEach(n=>{
+  n.addEventListener('click',()=>go(n.dataset.p));
+  n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go(n.dataset.p)}});
+});
+
+/* ================= 主题 ================= */
+const ICON_SUN='M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41zm12.03 12.03a.996.996 0 00-1.41 0 .996.996 0 000 1.41c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41zm-12.03-.01a.996.996 0 00-1.41 0 .996.996 0 000 1.41c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41zM16.61 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41z';
+const ICON_MOON='M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z';
+function updateThemeIcon(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const p=$('tIconPath');
+  if(p)p.setAttribute('d',dark?ICON_MOON:ICON_SUN);
+  const btn=$('themeBtn');
+  if(btn)btn.title=dark?T('theme.toLight'):T('theme.toDark');
+}
+function toggleTheme(){
+  const h=document.documentElement;
+  const dark=h.getAttribute('data-theme')==='dark';
+  h.setAttribute('data-theme',dark?'light':'dark');
+  S.theme=dark?'light':'dark';save();
+  $('tText').textContent=T(dark?'theme.toDark':'theme.toLight');
+  updateThemeIcon();
+  pushLog('info',T('log.theme',{n:T(dark?'home.light':'home.dark')}));
+}
+
+/* ================= 首页渲染 ================= */
+function renderHome(){
+  const on=S.protect;
+  const st=$('heroStat');
+  st.className='st '+(on?'st-ok':'st-err');
+  $('heroStatText').textContent=T(on?'home.protectOn':'home.protectOff');
+  $('heroTitle').textContent=T(on?'home.title':'home.titleOff');
+  const unread=S.notifies.filter(n=>!n.read).length;
+  const tag=$('fcProtectTag');
+  tag.textContent=T(on?'home.on':"home.off");
+  tag.style.color=on?'var(--accent)':'var(--danger)';
+  tag.style.background=on?'var(--accent-bg)':'var(--danger-bg)';
+  /* 仅通知中心显示未读红点 */
+  const nb=$('notifyBadge');
+  if(unread>0){nb.style.display='flex';nb.textContent=unread}else nb.style.display='none';
+  $('dbVer').textContent=S.db.ver;$('lastUpdate').textContent=S.db.last;$('dbText').textContent=T('home.dbLastUpdate')+S.db.last;
+  /* 首页卡片标签要跟随真实更新结果，不能永远显示「最新」 */
+  const dbTag=$('dbTag');
+  if(dbTag){
+    const st=S.db.state||'latest';
+    const map={latest:['home.dbLatest','accent'],updated:['home.dbUpdated','success'],fail:['home.dbFail','danger']};
+    const m=map[st]||map.latest;
+    dbTag.textContent=T(m[0]);
+    dbTag.style.color='var(--'+m[1]+')';
+    dbTag.style.background='var(--'+m[1]+'-bg)';
+  }
+}
+/* ---------- 模态框：背景滚动锁定（支持嵌套，计数管理）---------- */
+let modalDepth=0;
+function lockScroll(){if(modalDepth++===0)document.body.style.overflow='hidden';}
+function unlockScroll(){if(modalDepth>0&&--modalDepth===0)document.body.style.overflow='';}
+
+/* ---------- 通用确认框（替代原生 confirm，避免被环境拦截）---------- */
+const CF_IC={
+  warn:'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
+  danger:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z',
+  info:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'
+};
+let cfResolve=null;
+function askConfirm(opt){
+  /* 已有未决确认框时，先让旧的以「取消」结束，避免其 await 永久挂起 */
+  if(cfResolve){const old=cfResolve;cfResolve=null;modalDepth=Math.max(0,modalDepth-1);old({ok:false,checked:false})}
+  return new Promise(resolve=>{
+    cfResolve=resolve;
+    $('cfTitle').textContent=opt.title||T('cf.warnTitle');
+    $('cfSub').textContent=opt.step?T('cf.step',{a:opt.step,b:opt.total}):'';
+    $('cfText').textContent=opt.desc||'';
+    $('cfIc').className='cf-ic '+(opt.tone||'warn');
+    $('cfIcPath').setAttribute('d',CF_IC[opt.tone||'warn']);
+    $('cfYes').textContent=opt.yes||T('cf.yes');
+    $('cfNo').textContent=opt.no||T('cf.no');
+    $('cfYes').className=(opt.tone==='danger'||opt.danger)?'btn-r':'btn-g';
+    const wrap=$('cfChkWrap');
+    if(opt.checkbox){
+      wrap.style.display='flex';
+      $('cfChk').checked=false;
+      $('cfChkLabel').textContent=opt.checkbox;
+      if(opt.checkboxDesc)wrap.title=opt.checkboxDesc;
+    }else wrap.style.display='none';
+    $('confirmModal').classList.add('open');
+    lockScroll();
+    setTimeout(()=>{$('cfYes').focus()},60);
+  });
+}
+function closeConfirm(v){
+  if(!$('confirmModal').classList.contains('open'))return;
+  $('confirmModal').classList.remove('open');
+  unlockScroll();
+  const r=cfResolve;cfResolve=null;
+  const checked=$('cfChk').checked;
+  if(r)r(v?(checked?{ok:true,checked:true}:{ok:true,checked:false}):{ok:false,checked:false});
+}
+/* 两步确认：两步都点确定才算通过 */
+async function askConfirmTwice(opt){
+  const a=await askConfirm({title:opt.title1,desc:opt.desc1,tone:opt.tone||'warn',yes:opt.yes||T('cf.yes'),step:1,total:2});
+  if(!a.ok)return {ok:false};
+  const b=await askConfirm({title:opt.title2,desc:opt.desc2,tone:'danger',yes:opt.yes2||opt.yes||T('cf.yes'),step:2,total:2});
+  return b;
+}
+
+/* ---------- 日志 ---------- */
+const LOG_COLOR={info:'var(--accent)',ok:'var(--success)',warn:'var(--warn)',err:'var(--danger)'};
+function timeHM(){const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());}
+function pushLog(level,text){
+  S.logs.unshift({id:uid(),level:level,text:text,t:timeHM()});
+  if(S.logs.length>200)S.logs.length=200;
+  save();renderLogs();
+}
+function renderLogs(){
+  const box=$('logWrap');if(!box)return;
+  if(!S.logs.length){box.innerHTML='<div class="log-empty">'+esc(T('home.logEmpty'))+'</div>';return}
+  box.innerHTML=S.logs.map(l=>
+    '<div class="log-item"><span class="log-time">'+esc(l.t)+'</span>'+
+    '<span class="log-dot" style="background:'+(LOG_COLOR[l.level]||LOG_COLOR.info)+'"></span>'+
+    '<span class="log-txt">'+l.text+'</span></div>').join('');
+}
+function clearLogs(){
+  if(!S.logs.length)return;
+  S.logs=[];save();renderLogs();
+  toast('ok',T('home.logs'),T('home.logEmpty'));
+}
+/* ---------- 病毒库更新弹窗 ---------- */
+const UPD_IC={
+  idle:'M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79 2.73 2.71 7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58 3.51-3.47 9.14-3.49 12.65 0L21 3v7.12z',
+  ok:'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+  err:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'
+};
+let updTimer=null,updBusy=false;
+function updateDB(){openDBModal();}
+function openDBModal(){
+  if(updBusy)return;
+  $('updLog').innerHTML='';
+  $('updBar').style.display='none';
+  $('updBarF').style.width='0%';
+  $('updIc').className='upd-ic';
+  $('updIcPath').setAttribute('d',UPD_IC.idle);
+  $('updTitle').textContent=T('db.ready');
+  $('updSub').textContent=T('db.readyDesc');
+  $('updBtnText').textContent=T('db.check');
+  $('updBtn').disabled=false;
+  $('updBtn').className='btn-g';
+  $('updBtn').onclick=runUpdate;
+  $('updVer').textContent=S.db.ver;
+  $('updLast').textContent=S.db.last;
+  $('dbModal').classList.add('open');
+  lockScroll();
+}
+function closeDBModal(){
+  if(updBusy)return;                        /* 更新中不允许关闭 */
+  if(!$('dbModal').classList.contains('open'))return;
+  if(updTimer){clearTimeout(updTimer);updTimer=null}
+  $('dbModal').classList.remove('open');
+  unlockScroll();
+}
+function updLogRow(text,level){
+  const box=$('updLog');
+  box.insertAdjacentHTML('beforeend',
+    '<div class="ul-row"><span class="ul-d" style="background:'+(LOG_COLOR[level]||LOG_COLOR.info)+'"></span>'+
+    '<span class="ul-t">'+timeHM()+'</span><span style="flex:1">'+esc(text)+'</span></div>');
+  box.scrollTop=box.scrollHeight;
+}
+function setUpdateBtn(k,danger){
+  const b=$('updBtn');
+  $('updBtnText').textContent=T(k);
+  b.disabled=false;
+  b.className=danger?'btn-r':'btn-g';
+}
+function runUpdate(){
+  if(updBusy)return;
+  updBusy=true;
+  $('updBtn').onclick=runUpdate;
+  $('updBtn').disabled=true;
+  $('updBtnText').textContent=T('db.checking');
+  $('updIc').className='upd-ic spin';
+  $('updIcPath').setAttribute('d',UPD_IC.idle);
+  $('updBar').style.display='block';
+  $('updBarF').style.width='0%';
+  $('updLog').innerHTML='';
+  const steps=['db.l1','db.l2','db.l3','db.l4','db.l5'];
+  let i=0,p=0;
+  const tick=()=>{
+    if(i<steps.length){
+      updLogRow(T(steps[i]),'info');
+      i++;
+      p=Math.round(i/steps.length*100);
+      $('updBarF').style.width=p+'%';
+      if(i===1)$('updTitle').textContent=T('db.checking');
+      if(i===3)$('updTitle').textContent=T('db.downloading');
+      if(i===5)$('updTitle').textContent=T('db.installing');
+      updTimer=setTimeout(tick,520+Math.random()*380);
+      return;
+    }
+    $('updBarF').style.width='100%';
+    const hasNew=Math.random()>.35;
+    const fail=Math.random()<.12;
+    if(fail){
+      $('updIc').className='upd-ic err';
+      $('updIcPath').setAttribute('d',UPD_IC.err);
+      $('updTitle').textContent=T('db.fail');
+      $('updSub').textContent=T('db.failDesc');
+      updLogRow(T('db.fail'),'err');
+      S.db.state='fail';save();renderHome();
+      setUpdateBtn('db.retry',true);
+      pushLog('err',T('log.dbFail'));
+      toast('err',T('home.cardDb'),T('db.failDesc'));
+      updBusy=false;return;
+    }
+    $('updIc').className='upd-ic ok';
+    $('updIcPath').setAttribute('d',UPD_IC.ok);
+    if(hasNew){
+      const add=Math.floor(Math.random()*1800+200);
+      const size=(Math.random()*3+.6).toFixed(1)+' MB';
+      const old=S.db.ver;
+      S.db.ver=String(parseInt(S.db.ver,10)+add);
+      S.db.last=shortDate();S.db.state='updated';save();renderHome();
+      $('updVer').textContent=S.db.ver;$('updLast').textContent=S.db.last;
+      $('updTitle').textContent=T('db.updated');
+      $('updSub').textContent=T('db.updatedDesc')+' '+T('db.newCount')+' +'+add.toLocaleString()+' · '+T('db.size')+' '+size;
+      updLogRow(T('db.newCount')+' +'+add.toLocaleString(),'ok');
+      updLogRow(T('db.updated'),'ok');
+      setUpdateBtn('db.finish',false);
+      pushLog('ok',T('log.dbOk',{n:S.db.ver}));
+      toast('ok',T('db.updated'),T('db.newCount')+' +'+add.toLocaleString());
+      $('updBtn').onclick=closeDBModal;
+    }else{
+      S.db.last=shortDate();S.db.state='latest';save();renderHome();
+      $('updLast').textContent=S.db.last;
+      $('updTitle').textContent=T('db.done');
+      $('updSub').textContent=T('db.doneDesc');
+      updLogRow(T('db.doneDesc'),'ok');
+      setUpdateBtn('db.finish',false);
+      pushLog('info',T('log.dbLatest'));
+      toast('ok',T('home.cardDb'),T('db.doneDesc'));
+      $('updBtn').onclick=closeDBModal;
+    }
+    updBusy=false;
+  };
+  updTimer=setTimeout(tick,320);
+}
+
+/* ================= 扫描 ================= */
+const SCAN={quick:{base:1247,sec:154,rate:2.2,found:1},full:{base:524,sec:738,rate:1.5,found:3},custom:{base:847,sec:509,rate:1.8,found:2}};
+const THREATS=[
+  {name:'Setup_Crack.exe',virus:'千戮.Generic.Trojan.2241',path:'C:\\Users\\Administrator\\Downloads\\Setup_Crack.exe',size:'2.4 MB'},
+  {name:'svchost32.exe',virus:'Backdoor.Win32.Agent.ac',path:'C:\\Windows\\Temp\\svchost32.exe',size:'318 KB'},
+  {name:'keygen_v3.dll',virus:'RiskTool.Keygen',path:'C:\\ProgramData\\keygen_v3.dll',size:'96 KB'},
+  {name:'loader.js',virus:'JS.Downloader.heur',path:'C:\\Users\\Administrator\\AppData\\Roaming\\loader.js',size:'14 KB'}
+];
+let scanType=null,scanTimer=null,scanP=0,scanSec=0,scanFoundCount=0,scanResults=[],scanDone=false;
+let customTargets=[];
+function selectScanType(type){
+  if(scanTimer)return;
+  scanType=type;scanDone=false;scanResults=[];scanFoundCount=0;
+  document.querySelectorAll('.scan-type').forEach(t=>t.classList.toggle('sel',t.dataset.t===type));
+  const b=$('startScanBtn');b.disabled=false;b.textContent=T('scan.start')+' · '+T('scan.'+type);
+  clearScanResult();
+  setScanUI('idle');
+  if(type==='custom')openCustomPicker();
+}
+/* 点击「开始扫描」：自定义类型先弹选择框 */
+function onStartClick(){
+  if(scanType==='custom'){openCustomPicker();return}
+  startScan();
+}
+
+/* ---------- 自定义扫描：目标选择 ---------- */
+function renderCustomTargets(){
+  const box=$('customTargetList');
+  $('customCount').innerHTML=T('scan.targetCount',{n:customTargets.length});
+  $('customOkBtn').disabled=customTargets.length===0;
+  if(!customTargets.length){
+    box.innerHTML='<div class="empty" style="padding:30px 20px"><svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>'+
+      '<h3>'+T('scan.pickEmpty')+'</h3><p>'+T('scan.pickEmptyDesc')+'</p></div>';return;
+  }
+  box.innerHTML='<div class="tgt-list">'+customTargets.map(t=>
+    '<div class="tgt-item"><div class="tg-ic"><svg viewBox="0 0 24 24"><path d="'+(t.kind==='dir'
+      ?'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z'
+      :'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z')+'"/></svg></div>'+
+    '<div class="tg-body"><div class="tg-name">'+esc(t.name)+'</div>'+
+    (t.path!==t.name?'<div class="tg-path">'+esc(t.path)+'</div>':'')+'</div>'+
+    '<span class="tg-kind">'+T(t.kind==='dir'?'scan.targetDir':'scan.targetFile')+'</span>'+
+    '<button class="btn-d btn-sm" onclick="removeCustomTarget(\''+t.id+'\')">'+T('notify.delete')+'</button></div>').join('')+'</div>';
+}
+function pushCustomTarget(name,path,kind){
+  if(customTargets.some(t=>t.path.toLowerCase()===path.toLowerCase()))return false;
+  customTargets.push({id:uid(),name:name,path:path,kind:kind});return true;
+}
+function addCustomPath(){
+  const el=$('customPathInput');const p=el.value.trim();
+  if(!p)return;
+  const isDir=isDirPath(p);
+  const name=p.split(/[\\/]/).filter(Boolean).pop()||p;
+  const ok=pushCustomTarget(name,p,/^[a-zA-Z]:[\\/]?$/i.test(p)?'dir':(isDir?'dir':'file'));
+  el.value='';
+  if(!ok)toast('warn',T('scan.pickTitle'),T('trust.dup'));
+  renderCustomTargets();
+}
+function addCustomFiles(e){
+  const files=e.target.files||[];let n=0;
+  for(const f of files){if(pushCustomTarget(f.name,(f.webkitRelativePath||f.name),'file'))n++}
+  e.target.value='';renderCustomTargets();
+  if(n)toast('ok',T('scan.pickTitle'),n+(lang==='en'?' file(s) added':' 个文件已添加'));
+}
+function addCustomDir(e){
+  const files=e.target.files||[];
+  if(!files.length){e.target.value='';return}
+  const first=files[0].webkitRelativePath||files[0].name;
+  const dir=first.indexOf('/')>0?first.split('/')[0]:'';
+  const ok=dir?pushCustomTarget(dir,dir,'dir'):false;
+  e.target.value='';renderCustomTargets();
+  toast(ok?'ok':'warn',T('scan.pickTitle'),ok?T('scan.pickDir')+'：'+dir:T('trust.dup'));
+}
+function removeCustomTarget(id){
+  const i=customTargets.findIndex(t=>t.id===id);if(i<0)return;
+  customTargets.splice(i,1);renderCustomTargets();
+}
+function clearCustomTargets(){customTargets=[];renderCustomTargets();}
+function openCustomPicker(){
+  $('customPathInput').value='';
+  renderCustomTargets();
+  $('customModal').classList.add('open');
+  lockScroll();
+  setTimeout(()=>{$('customPathInput').focus()},60);
+}
+function closeCustomPicker(){
+  if(!$('customModal').classList.contains('open'))return;
+  $('customModal').classList.remove('open');
+  unlockScroll();
+  if(!customTargets.length)resetScanType();
+}
+function confirmCustom(){
+  if(!customTargets.length)return;
+  if($('customModal').classList.contains('open')){$('customModal').classList.remove('open');unlockScroll()}
+  setScanUI('idle');
+  startScan();
+}
+function resetScanType(){
+  scanType=null;
+  document.querySelectorAll('.scan-type').forEach(t=>t.classList.remove('sel'));
+  const b=$('startScanBtn');b.disabled=true;b.textContent=T('scan.start');
+  $('scanTitle').textContent=T('scan.ready');
+  $('scanSub').textContent=T('scan.readyDesc');
+}
+function setScanUI(state){
+  const ic=$('scanIc');
+  ic.className='scan-ic'+(state==='run'?' act':(state==='clean'?' ok':((state==='stop'||state==='found')?' err':'')));
+  const running=state==='run';
+  $('scanBar').style.display=running?'block':'none';
+  $('scanStats').style.display=running?'block':'none';
+  $('startScanBtn').style.display=running?'none':'inline-flex';
+  $('stopScanBtn').style.display=running?'inline-flex':'none';
+  $('pbarF').classList.toggle('act',running);
+  const types=$('scanTypes');
+  if(types){
+    if(running){types.style.display='none'}
+    else{
+      types.style.display='';
+      types.style.animation='none';
+      void types.offsetWidth;
+      types.style.animation='fi .3s var(--ease-out)';
+    }
+  }
+  const path={idle:'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
+    ok:'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    err:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'};
+  ic.querySelector('path').setAttribute('d',path[state==='clean'?'ok':((state==='stop'||state==='found')?'err':'idle')]);
+}
+function quickScan(){go('scan');selectScanType('quick');setTimeout(startScan,260);}
+function startScan(){
+  if(!scanType||scanTimer)return;
+  const cfg=SCAN[scanType];
+  scanP=0;scanSec=cfg.sec;scanFoundCount=0;scanResults=[];scanDone=false;
+  setScanUI('run');
+  $('scanTitle').textContent=T('scan.scanning');
+  $('scanSub').textContent=(scanType==='custom'&&customTargets.length)
+    ? T('scan.scanningTargets',{n:customTargets.length})
+    : T('scan.'+scanType)+' · '+T('scan.runningDesc');
+  const total=cfg.base+Math.round(100*cfg.rate*60);
+  const expect=cfg.found;
+  const span=expect===1?70:88;              /* 检出点在进度条上前移，留出收尾余量 */
+  $('startScanBtn').textContent=T('scan.'+scanType);
+  clearScanResult();
+  pushLog('info',T('log.scanStart',{type:T('scan.'+scanType)}));
+  scanTimer=setInterval(()=>{
+    scanP=Math.min(100,scanP+cfg.rate);
+    scanSec=Math.max(0,Math.round(cfg.sec*(1-scanP/100)));   /* 线性递减，收尾归零 */
+    const scanned=Math.floor(cfg.base+(total-cfg.base)*(scanP/100));
+    const shouldHave=Math.min(expect,Math.floor(scanP/(span/expect)));
+    while(scanFoundCount<shouldHave&&scanFoundCount<THREATS.length){
+      const t=THREATS[scanFoundCount];
+      const r={id:uid(),name:t.name,virus:t.virus,path:t.path,size:t.size,handled:false};
+      scanResults.push(r);
+      scanFoundCount++;
+      appendScanItem(r);                     /* 发现一个，立刻显示一个 */
+      if(scanFoundCount===1)toast('err',T('scan.found'),t.name);
+    }
+    $('pbarF').style.width=scanP+'%';
+    $('scanPct').textContent=Math.floor(scanP)+'%';
+    $('scanCnt').textContent=(lang==='en'?'Scanned ':'已扫描 ')+scanned.toLocaleString()+(lang==='en'?' files':' 个文件');
+    $('spF').textContent=scanned.toLocaleString();
+    $('spT').textContent=fmtTime(scanSec);
+    $('spT2').textContent=scanFoundCount;
+    $('spT2').className='sp-v'+(scanFoundCount>0?' danger':'');
+    if(scanP>=100)finishScan();
+  },180);
+}
+function finishScan(){
+  clearInterval(scanTimer);scanTimer=null;scanDone=true;
+  $('startScanBtn').textContent=T('scan.rescan');
+  if(scanResults.length>0){
+    setScanUI('found');
+    $('scanTitle').textContent=T('scan.found');
+    $('scanSub').textContent=(lang==='en'?'Found ':'发现 ')+scanResults.length+(lang==='en'?' threats. Quarantine them now.':' 个威胁，建议立即隔离。');
+    pushNotify('threat',T('scan.found'),T('scan.'+scanType)+(lang==='en'?': ':'：')+scanResults.length+(lang==='en'?' threats found':' 个威胁待处理'));
+    pushLog('err',T('log.scanFound',{type:T('scan.'+scanType),n:scanResults.length}));
+    toast('err',T('scan.found'),scanResults.length+(lang==='en'?' threats found':' 个威胁，请及时处理'));
+  }else{
+    setScanUI('clean');
+    $('scanTitle').textContent=T('scan.clean');
+    $('scanSub').textContent=T('scan.cleanDesc');
+    pushLog('ok',T('log.scanDone',{type:T('scan.'+scanType)}));
+    toast('ok',T('scan.clean'),T('scan.cleanDesc'));
+  }
+  updateScanResMeta();renderHome();
+}
+function stopScan(){
+  if(!scanTimer)return;
+  clearInterval(scanTimer);scanTimer=null;scanDone=false;scanResults=[];scanFoundCount=0;
+  setScanUI('stop');
+  $('scanTitle').textContent=T('scan.stopped');
+  $('scanSub').textContent=T('scan.stoppedDesc');
+  $('startScanBtn').textContent=T('scan.rescan');
+  clearScanResult();
+  pushLog('warn',T('log.scanStop',{type:T('scan.'+scanType)}));
+  toast('warn',T('scan.stopped'),T('scan.stoppedDesc'));
+}
+const RES_IC='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z';
+const RES_OK_IC='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
+function scanResItemHTML(r){
+  const done=!!r.handled;
+  return '<div class="res-item" id="ri-'+r.id+'">'+
+    '<div class="ri-ic" style="background:'+(done?'var(--success)':'var(--danger)')+'">'+
+      '<svg viewBox="0 0 24 24"><path d="'+(done?RES_OK_IC:RES_IC)+'"/></svg></div>'+
+    '<div class="ri-body"><div class="ri-t" style="color:'+(done?'var(--success)':'var(--danger)')+'">'+esc(r.virus)+'</div>'+
+    '<div class="ri-p">'+esc(r.path)+'</div>'+
+    '<div class="qi-tags">'+
+      '<span class="chip" style="background:var(--bg);color:var(--ts)">'+esc(r.name)+'</span>'+
+      (r.size?'<span class="chip" style="background:var(--bg);color:var(--ts)">'+esc(r.size)+'</span>':'')+
+      (done?'<span class="chip ri-flag" style="background:var(--success-bg);color:var(--success)">'+T('scan.done')+'</span>':'')+
+    '</div></div></div>';
+}
+function initScanResult(){
+  $('scanResult').innerHTML='<div class="res-list" id="scanResList" style="display:none">'+
+    '<h3 id="scanResTitle"><svg viewBox="0 0 24 24"><path d="'+RES_IC+'"/></svg><span id="scanResTitleText"></span></h3>'+
+    '<div id="scanResItems"></div>'+
+    '<div class="res-act" id="scanResAct" style="display:none">'+
+      '<button class="btn-r btn-sm" onclick="handleAll()">'+T('scan.handleAll')+'</button>'+
+      '<button class="btn-o btn-sm" onclick="cancelScan()">'+T('scan.cancel')+'</button>'+
+    '</div></div>';
+}
+function updateScanResMeta(){
+  const list=$('scanResList');if(!list)return;
+  const n=scanResults.length;
+  if(!n){list.style.display='none';return}
+  list.style.display='block';
+  const pending=scanResults.filter(r=>!r.handled).length;
+  const t=$('scanResTitleText');
+  if(t)t.textContent=(scanTimer?T('scan.scanning'):T('scan.resultTitle'))+'（'+n+'）';
+  const act=$('scanResAct');
+  if(act)act.style.display=(pending&&!scanTimer)?'flex':'none';
+}
+/* 检出一条就立即插入一条，带滑入动画 */
+function appendScanItem(r){
+  const box=$('scanResItems');if(!box)return;
+  box.insertAdjacentHTML('beforeend',scanResItemHTML(r));
+  updateScanResMeta();
+}
+function updateScanItem(id){
+  const r=scanResults.find(x=>x.id===id);if(!r)return;
+  const el=$('ri-'+id);if(!el)return;
+  el.outerHTML=scanResItemHTML(r);
+  updateScanResMeta();
+}
+function renderScanResult(){
+  if(!scanResults.length){clearScanResult();return}
+  if(!$('scanResList'))initScanResult();
+  $('scanResItems').innerHTML=scanResults.map(scanResItemHTML).join('');
+  updateScanResMeta();
+}
+function clearScanResult(){initScanResult();updateScanResMeta();}
+/* 一键处理全部：逐条隔离，只汇总一次提示 */
+function handleAll(){
+  const items=scanResults.filter(r=>!r.handled);
+  if(!items.length)return;
+  let n=0;
+  items.forEach(r=>{
+    if(S.quar.some(q=>q.path===r.path)){r.handled=true;updateScanItem(r.id);return}
+    S.quar.unshift({id:uid(),name:r.name,virus:r.virus,path:r.path,date:nowStr(),size:r.size});
+    r.handled=true;n++;updateScanItem(r.id);
+  });
+  save();renderQuar();renderHome();updateScanResMeta();
+  if(n)pushNotify('threat',T('scan.handleAll'),(lang==='en'?'Quarantined ':'已隔离 ')+n+(lang==='en'?' threat(s)':' 个威胁'));
+  pushLog(n?'ok':'warn',T('log.quarAll',{n:n}));
+  toast(n?'ok':'warn',T('scan.handleAll'),n?((lang==='en'?'Quarantined ':'已隔离 ')+n+(lang==='en'?' threat(s)':' 个威胁')):T('trust.dup'));
+}
+/* 取消：两次确认，防止误点 */
+async function cancelScan(){
+  if(!scanResults.length)return;
+  const r=await askConfirmTwice({
+    title1:T('scan.cancelConfirm1'),desc1:T('scan.cancelConfirm1Desc'),
+    title2:T('scan.cancelConfirm2'),desc2:T('scan.cancelConfirm2Desc')
+  });
+  if(!r.ok)return;
+  scanResults=[];scanFoundCount=0;scanDone=false;
+  clearScanResult();
+  setScanUI('idle');
+  $('scanTitle').textContent=T('scan.ready');
+  $('scanSub').textContent=T('scan.readyDesc');
+  $('startScanBtn').textContent=scanType?T('scan.start')+' · '+T('scan.'+scanType):T('scan.start');
+  pushLog('warn',T('log.scanStop',{type:T('scan.'+scanType)}));
+  toast('warn',T('scan.cancelled'),T('scan.cancelledDesc'));
+}
+
+/* ================= 系统修复 ================= */
+const REPAIR_STEPS_ZH=['正在检查系统文件完整性…','正在修复注册表安全项…','正在恢复被篡改的安全策略…','正在校验防护组件…','正在清理残留配置…'];
+const REPAIR_STEPS_EN=['Checking system file integrity…','Repairing registry security keys…','Restoring tampered security policies…','Verifying protection components…','Cleaning leftover settings…'];
+const REPAIR_ITEMS=[
+  {k:'registry',zh:'注册表安全项',en:'Registry security keys'},
+  {k:'policy',zh:'安全策略',en:'Security policies'},
+  {k:'firewall',zh:'防火墙配置',en:'Firewall configuration'},
+  {k:'uac',zh:'UAC 用户账户控制',en:'UAC settings'},
+  {k:'driver',zh:'防护驱动',en:'Protection driver'}
+];
+let repairTimer=null,repairP=0,repairDone=false,repairShown=0,repairNeedReboot=null;
+function repairItemName(i){const it=REPAIR_ITEMS[i];return lang==='en'?it.en:it.zh;}
+function initRepairResult(){
+  $('repairResult').innerHTML='<div class="res-list" id="repResList" style="margin-top:16px;display:none">'+
+    '<h3 style="margin-bottom:12px">'+T('repair.resultTitle')+'</h3><div id="repResItems"></div></div>';
+}
+/* 逐条追加：先显示「修复中」，定稿时再改为最终状态 */
+function appendRepairItem(i){
+  const box=$('repResItems');if(!box)return;
+  box.insertAdjacentHTML('beforeend',
+    '<div class="rep-item busy" id="rp-'+i+'"><span class="ri-dot"></span>'+
+    '<span class="ri-name">'+esc(repairItemName(i))+'</span>'+
+    '<span class="ri-st">'+T('repair.running')+'</span></div>');
+  $('repResList').style.display='block';
+}
+function settleRepairItem(i,bad){
+  const el=$('rp-'+i);if(!el)return;
+  el.classList.remove('busy');
+  const dot=el.querySelector('.ri-dot'),st=el.querySelector('.ri-st');
+  const color=bad?'var(--warn)':'var(--success)';
+  dot.style.background=color;dot.style.animation='none';
+  st.textContent=bad?T('repair.skipped'):T('repair.fixed');
+  st.style.color=color;
+}
+function renderRepairResult(){
+  if(repairTimer)return;                       /* 进行中不打断逐条动画 */
+  if(repairShown===0){$('repairResult').innerHTML='';return}
+  initRepairResult();
+  $('repResList').style.display='block';
+  const n=REPAIR_ITEMS.length;
+  $('repResItems').innerHTML=REPAIR_ITEMS.map((it,i)=>{
+    const bad=repairNeedReboot&&i===n-1;
+    const color=bad?'var(--warn)':'var(--success)';
+    return '<div class="rep-item" id="rp-'+i+'">'+
+      '<span class="ri-dot" style="background:'+color+';animation:none"></span>'+
+      '<span class="ri-name">'+esc(repairItemName(i))+'</span>'+
+      '<span class="ri-st" style="color:'+color+'">'+(bad?T('repair.skipped'):T('repair.fixed'))+'</span></div>';
+  }).join('');
+}
+function startRepair(){
+  if(repairTimer)return;
+  repairP=0;repairDone=false;repairShown=0;
+  initRepairResult();
+  $('repairBtn').disabled=true;$('repairBtn').textContent=T('repair.running');
+  $('repairNote').style.display='block';$('repairBar').style.display='block';
+  $('repairTitle').textContent=T('repair.running');
+  $('repairSub').textContent=T('repair.notice');
+  repairNeedReboot=null;
+  pushLog('info',T('log.repairStart'));
+  const steps=lang==='en'?REPAIR_STEPS_EN:REPAIR_STEPS_ZH;
+  const n=REPAIR_ITEMS.length,seg=100/n;
+  $('repairStep').textContent=steps[0];
+  repairTimer=setInterval(()=>{
+    repairP=Math.min(100,repairP+1.15);
+    const si=Math.min(steps.length-1,Math.floor(repairP/100*steps.length));
+    $('repairStep').textContent=steps[si];
+    $('repairPct').textContent=Math.floor(repairP)+'%';
+    $('repairBarF').style.width=repairP+'%';
+    /* 进入每一段就冒出一条，离开该段就定稿 */
+    while(repairShown<n&&repairP>=repairShown*seg+seg*.2){appendRepairItem(repairShown);repairShown++}
+    const needReboot=!S.compOk&&S.protect;
+    for(let i=0;i<repairShown;i++){
+      const done=repairP>=(i+1)*seg||repairP>=100;
+      const el=$('rp-'+i);
+      if(el&&done&&el.classList.contains('busy'))settleRepairItem(i,needReboot&&i===n-1);
+    }
+    if(repairP>=100)finishRepair(needReboot);
+  },85);
+}
+function finishRepair(needReboot){
+  clearInterval(repairTimer);repairTimer=null;repairDone=true;
+  repairNeedReboot=!!needReboot;
+  while(repairShown<REPAIR_ITEMS.length){appendRepairItem(repairShown);settleRepairItem(repairShown,needReboot&&repairShown===REPAIR_ITEMS.length-1);repairShown++}
+  for(let i=0;i<REPAIR_ITEMS.length;i++)settleRepairItem(i,needReboot&&i===REPAIR_ITEMS.length-1);
+  $('repairNote').style.display='none';
+  $('repairBtn').disabled=false;$('repairBtn').textContent=T('repair.recheck');
+  $('repairTitle').textContent=needReboot?T('repair.partial'):T('repair.done');
+  $('repairSub').textContent=needReboot?T('repair.partialDesc'):T('repair.doneDesc');
+  const fixed=REPAIR_ITEMS.length-(needReboot?1:0);
+  $('repairStep').textContent=(lang==='en'?(fixed+' / '+REPAIR_ITEMS.length+' fixed'):('已修复 '+fixed+' / '+REPAIR_ITEMS.length+' 项'));
+  pushNotify(needReboot?'warn':'info',needReboot?T('repair.partial'):T('repair.done'),needReboot?T('repair.partialDesc'):T('repair.doneDesc'));
+  pushLog(needReboot?'warn':'ok',needReboot?T('log.repairPartial',{n:1}):T('log.repairDone',{n:fixed}));
+  toast(needReboot?'warn':'ok',needReboot?T('repair.partial'):T('repair.done'),needReboot?T('repair.partialDesc'):T('repair.doneDesc'));
+}
+
+/* ================= 实时防护 ================= */
+function renderProtect(){
+  const on=S.protect;
+  const ic=$('psIcon');
+  ic.style.background=on?'var(--accent-bg)':'var(--danger-bg)';
+  ic.querySelector('svg').style.fill=on?'var(--accent)':'var(--danger)';
+  $('psTitle').textContent=T(on?'protect.running':'protect.off');
+  $('psDesc').textContent=T(on?'protect.runningDesc':'protect.offDesc');
+  $('protectAlertBox').style.display=on?'none':'block';
+  $('protectToggle').checked=on;
+  ['open','ransom','auto','quiet'].forEach(k=>{
+    const el=$('mod'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.checked=!!S.modules[k];
+  });
+  document.querySelectorAll('.pc').forEach((c,i)=>{
+    const keys=['open','ransom','auto','quiet'];
+    c.style.opacity=(on&&S.modules[keys[i]])?'1':'.58';
+  });
+}
+function toggleProtect(el){
+  S.protect=el.checked;save();renderProtect();renderHome();
+  if(S.protect){
+    pushLog('ok',T('log.protectOn'));
+    toast('ok',T('protect.running'),T('protect.runningDesc'));
+    pushNotify('info',T('home.protectOn'),T('protect.runningDesc'));
+  }else{
+    pushLog('warn',T('log.protectOff'));
+    toast('err',T('protect.off'),T('protect.offDesc'));
+    pushNotify('warn',T('home.protectOff'),T('protect.offTip'));
+  }
+}
+function enableProtect(){
+  S.protect=true;save();renderProtect();renderHome();
+  pushLog('ok',T('log.protectOn'));
+  toast('ok',T('protect.running'),T('protect.runningDesc'));
+  pushNotify('info',T('home.protectOn'),T('protect.runningDesc'));
+}
+function toggleModule(key,el){
+  S.modules[key]=el.checked;save();renderProtect();
+  const names={open:'protect.m1',ransom:'protect.m2',auto:'protect.m3',quiet:'protect.m4'};
+  pushLog(el.checked?'ok':'warn',T(el.checked?'log.moduleOn':'log.moduleOff',{n:T(names[key])}));
+  toast(el.checked?'ok':'warn',T(names[key]),T(el.checked?'set.on':'set.off'));
+}
+
+/* ================= 信任区 ================= */
+const TRUST_DIR_IC='M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z';
+const TRUST_OK_IC='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
+function renderTrust(){
+  const box=$('trustList');
+  $('trustCount').innerHTML=T('trust.count',{n:S.trust.length});
+  if(!S.trust.length){
+    box.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>'+
+      '<h3>'+T('trust.empty')+'</h3><p>'+T('trust.emptyDesc')+'</p></div>';return;
+  }
+  box.innerHTML='<div class="q-list">'+S.trust.map(t=>{
+    const isDir=t.kind==='dir';
+    return '<div class="q-item trust"><div class="qi-ic"><svg viewBox="0 0 24 24"><path d="'+(isDir?TRUST_DIR_IC:TRUST_OK_IC)+'"/></svg></div>'+
+    '<div class="qi-body"><div class="qi-name">'+esc(t.name)+'</div><div class="qi-meta">'+esc(t.path)+'</div>'+
+    '<div class="qi-tags">'+
+      '<span class="chip" style="background:var(--accent-bg);color:var(--accent)">'+T(isDir?'scan.targetDir':'scan.targetFile')+'</span>'+
+      (isDir?'<span class="chip trust-sub'+(t.recursive?' on':'')+'">'+(t.recursive?T('trust.recursive'):T('trust.noRecursive'))+'</span>':'')+
+      '<span class="chip" style="background:var(--bg);color:var(--ts)">'+esc(t.date)+'</span></div></div>'+
+    '<div class="qi-act"><button class="btn-d btn-sm" onclick="removeTrust(\''+t.id+'\')">'+T('quar.delete')+'</button></div></div>';
+  }).join('')+'</div>';
+}
+function pushTrust(name,path,kind,recursive){
+  if(S.trust.some(t=>t.path.toLowerCase()===path.toLowerCase()))return false;
+  S.trust.unshift({id:uid(),name:name,path:path,kind:kind,recursive:!!recursive,date:nowStr()});
+  return true;
+}
+function addTrustByPath(){
+  const el=$('trustInput');const p=el.value.trim();
+  if(!p)return;
+  if(S.trust.some(t=>t.path.toLowerCase()===p.toLowerCase())){toast('warn',T('nav.trust'),T('trust.dup'));return}
+  const name=p.split(/[\\/]/).filter(Boolean).pop()||p;
+  const isDir=isDirPath(p);
+  const rec=isDir&&$('trustRecursive').checked;
+  pushTrust(name,p.replace(/[\\/]+$/,'')||p,isDir?'dir':'file',rec);
+  save();el.value='';
+  renderTrust();pushLog('ok',T('log.trustAdd',{n:esc(name)}));
+  toast('ok',T('trust.added'),name+(isDir?'（'+(rec?T('trust.recursive'):T('trust.noRecursive'))+'）':''));
+}
+function addTrustByFile(e){
+  const files=e.target.files||[];
+  let added=0;
+  for(const f of files){
+    const p=f.webkitRelativePath||f.name;
+    if(!pushTrust(f.name,p,'file',false))continue;
+    added++;
+  }
+  e.target.value='';save();renderTrust();
+  if(added){pushLog('ok',T('log.trustAdd',{n:T('trust.addedN',{n:added})}));toast('ok',T('trust.fileAdded'),T('trust.addedN',{n:added}))}
+  else toast('warn',T('nav.trust'),T('trust.dup'));
+}
+/* 添加文件夹：webkitdirectory 只能拿到顶层目录名 */
+function addTrustByDir(e){
+  const files=e.target.files||[];
+  if(!files.length){e.target.value='';return}
+  const first=files[0].webkitRelativePath||files[0].name;
+  const dir=first.indexOf('/')>0?first.split('/')[0]:first;
+  const rec=$('trustRecursive').checked;
+  const subCount=rec?new Set(files.map(f=>(f.webkitRelativePath||'').split('/').slice(0,-1).join('/'))).size:1;
+  e.target.value='';
+  const ok=pushTrust(dir,dir,'dir',rec);
+  save();renderTrust();
+  if(!ok){toast('warn',T('nav.trust'),T('trust.dup'));return}
+  pushLog('ok',T('log.trustAdd',{n:esc(dir)+(rec?'（'+T('trust.recursive')+'）':'')}));
+  toast('ok',T('trust.folderAdded'),dir+(rec?' · '+subCount+(lang==='en'?' folder(s)':' 个子目录'):''));
+}
+function removeTrust(id){
+  const i=S.trust.findIndex(t=>t.id===id);if(i<0)return;
+  const n=S.trust[i].name;S.trust.splice(i,1);save();renderTrust();
+  pushLog('info',T('log.trustDel',{n:esc(n)}));
+  toast('ok',T('trust.removed'),n);
+}
+$('trustInput')&&$('trustInput').addEventListener('keydown',e=>{if(e.key==='Enter')addTrustByPath()});
+
+/* ================= 隔离区 ================= */
+function renderQuar(){
+  const box=$('quarList');
+  $('quarCount').innerHTML=T('quar.count',{n:S.quar.length});
+  $('quarClear').style.display=S.quar.length?'inline-flex':'none';
+  renderHome();
+  if(!S.quar.length){
+    box.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 0h-4V4h4v2z"/></svg>'+
+      '<h3>'+T('quar.empty')+'</h3><p>'+T('quar.emptyDesc')+'</p></div>';return;
+  }
+  box.innerHTML='<div class="q-list">'+S.quar.map(q=>
+    '<div class="q-item"><div class="qi-ic"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>'+
+    '<div class="qi-body"><div class="qi-name">'+esc(q.virus)+'</div><div class="qi-meta">'+esc(q.path)+'</div>'+
+    '<div class="qi-tags"><span class="chip" style="background:var(--danger-bg);color:var(--danger)">'+esc(q.name)+'</span>'+
+    (q.size?'<span class="chip" style="background:var(--bg);color:var(--ts)">'+esc(q.size)+'</span>':'')+
+    '<span class="chip" style="background:var(--bg);color:var(--ts)">'+esc(q.date)+'</span></div></div>'+
+    '<div class="qi-act"><button class="btn-o btn-sm" onclick="restoreQuar(\''+q.id+'\')">'+T('quar.restore')+'</button>'+
+    '<button class="btn-d btn-sm" onclick="deleteQuar(\''+q.id+'\')">'+T('quar.delete')+'</button></div></div>').join('')+'</div>';
+}
+function restoreQuar(id){
+  const i=S.quar.findIndex(q=>q.id===id);if(i<0)return;
+  const q=S.quar[i];
+  if(!S.trust.some(t=>t.path===q.path))S.trust.unshift({id:uid(),name:q.name,path:q.path,date:nowStr()});
+  S.quar.splice(i,1);save();renderQuar();renderTrust();
+  pushNotify('info',T('quar.restored'),q.name+' | '+q.path);
+  pushLog('ok',T('log.restore',{n:esc(q.name)}));
+  toast('ok',T('quar.restored'),q.name);
+}
+function deleteQuar(id){
+  const i=S.quar.findIndex(q=>q.id===id);if(i<0)return;
+  const q=S.quar[i];S.quar.splice(i,1);save();renderQuar();
+  pushLog('info',T('log.del',{n:esc(q.name)}));
+  toast('ok',T('quar.deleted'),q.name);
+}
+async function clearQuar(){
+  if(!S.quar.length)return;
+  const r=await askConfirm({title:T('quar.clearConfirm'),desc:T('quar.clearConfirmDesc'),tone:'danger',yes:T('quar.clear')});
+  if(!r.ok)return;
+  const n=S.quar.length;S.quar=[];save();renderQuar();
+  pushLog('warn',T('log.quarClear',{n:n}));
+  toast('ok',T('quar.cleared'),T('quar.emptyDesc'));
+}
+
+/* ================= 通知 ================= */
+const NT_STYLE={info:['提示','Info','var(--accent-bg)','var(--accent)'],warn:['警告','Warning','var(--warn-bg)','var(--warn)'],threat:['威胁处置','Threat','var(--danger-bg)','var(--danger)']};
+function renderNotify(){
+  const box=$('notifyList');
+  const unread=S.notifies.filter(n=>!n.read).length;
+  $('notifyCount').innerHTML=T('notify.count',{n:S.notifies.length,u:unread});
+  if(!S.notifies.length){box.innerHTML='<div class="empty"><h3>'+T('notify.empty')+'</h3></div>';renderHome();return}
+  box.innerHTML=S.notifies.map(n=>{
+    const s=NT_STYLE[n.type]||NT_STYLE.info;
+    return '<div class="nf'+(n.read?' read':'')+'" onclick="markAsRead(\''+n.id+'\')">'+
+      '<div class="nf-hd"><span class="nt" style="background:'+s[2]+';color:'+s[3]+'">'+(lang==='en'?s[1]:s[0])+'</span>'+
+      '<span class="tm">'+esc(n.time)+'</span></div>'+
+      '<h3>'+(n.read?'':'<span class="unread-dot"></span>')+esc(n.title)+'</h3>'+
+      '<p>'+esc(n.desc)+'</p>'+
+      '<div class="nf-act">'+
+      '<button class="btn-o btn-sm" onclick="event.stopPropagation();markAsRead(\''+n.id+'\')" '+(n.read?'disabled':'')+'>'+(n.read?T('notify.readDone'):T('notify.read'))+'</button>'+
+      '<button class="btn-d btn-sm" onclick="event.stopPropagation();delNotify(\''+n.id+'\')">'+T('notify.delete')+'</button>'+
+      '</div></div>';
+  }).join('');
+  renderHome();
+}
+function pushNotify(type,title,desc){
+  S.notifies.unshift({id:uid(),type:type,title:title,desc:desc,time:nowStr(),read:false});
+  if(S.notifies.length>100)S.notifies.length=100;
+  save();renderNotify();
+}
+function markAsRead(id){
+  const n=S.notifies.find(x=>x.id===id);if(!n||n.read)return;
+  n.read=true;save();renderNotify();
+}
+function clearAllRead(){
+  if(!S.notifies.some(n=>!n.read))return;
+  S.notifies.forEach(n=>n.read=true);save();renderNotify();
+  pushLog('info',T('log.notifyRead'));
+  toast('ok',T('notify.readAll'),T('notify.readDone'));
+}
+async function delNotify(id){
+  const i=S.notifies.findIndex(n=>n.id===id);if(i<0)return;
+  const r=await askConfirm({title:T('notify.delConfirm'),desc:T('notify.delConfirmDesc'),tone:'danger',yes:T('notify.delete')});
+  if(!r.ok)return;
+  S.notifies.splice(i,1);save();renderNotify();
+  pushLog('info',T('notify.deleted'));
+  toast('ok',T('notify.deleted'),'');
+}
+
+/* ================= 设置 ================= */
+function togSt(el){
+  const body=el.nextElementSibling;
+  if(body&&body.classList.contains('st-body')){body.classList.toggle('open');el.classList.toggle('open')}
+}
+function toggleSetting(el,key){
+  S.settings[key]=el.checked;save();
+  toast('info',T('set.'+(key==='autoUpdate'?'autoUpdate':key))||T('set.general'),T('set.saved')+' · '+T(el.checked?'set.on':'set.off'));
+}
+function checkComponent(){
+  const btn=$('compCheckBtn');
+  pushLog('info',T('log.compCheck'));
+  btn.disabled=true;btn.textContent=T('set.checking');
+  $('compMsg').dataset.k='set.compIdle';$('compText').textContent=T('set.checking');
+  $('compDot').style.background='var(--warn)';$('compErr').style.display='none';
+  setTimeout(()=>{
+    btn.disabled=false;btn.textContent=T('set.check');
+    const ok=S.compOk;
+    $('compMsg').dataset.k=ok?'set.compOk':'set.compBad';
+    $('compText').textContent=T(ok?'set.compOk':'set.compBad');
+    $('compDot').style.background=ok?'var(--success)':'var(--danger)';
+    $('compErr').style.display=ok?'none':'block';
+    $('compErr').textContent=T('set.compErr');
+    $('compFixBtn').disabled=ok;
+    pushLog(ok?'ok':'err',T(ok?'log.compOk':'log.compBad'));
+    toast(ok?'ok':'err',T('set.component'),T(ok?'set.compOk':'set.compBad'));
+  },1100);
+}
+function fixComponent(){
+  const btn=$('compFixBtn');
+  btn.disabled=true;btn.textContent=T('set.fixing');
+  $('compMsg').dataset.k='set.compFixing';$('compText').textContent=T('set.compFixing');
+  $('compDot').style.background='var(--warn)';
+  setTimeout(()=>{
+    const ok=Math.random()>.15;
+    btn.textContent=T('set.fix');btn.disabled=ok;
+    S.compOk=ok;save();
+    $('compMsg').dataset.k=ok?'set.compFixed':'set.compFail';
+    $('compText').textContent=T(ok?'set.compFixed':'set.compFail');
+    $('compDot').style.background=ok?'var(--success)':'var(--danger)';
+    $('compErr').style.display=ok?'none':'block';
+    $('compErr').textContent=T('set.compErr');
+    pushLog(ok?'ok':'err',T(ok?'log.compFixed':'log.compFail'));
+    toast(ok?'ok':'err',T('set.component'),T(ok?'set.compFixed':'set.compFail'));
+    pushNotify(ok?'info':'warn',T('set.component'),T(ok?'set.compFixed':'set.compFail'));
+    renderHome();
+  },1600);
+}
+
+/* ================= 初始化 ================= */
+load();
+lang=S.lang;
+document.documentElement.setAttribute('data-theme',S.theme);
+updateThemeIcon();
+document.documentElement.lang=lang==='en'?'en':'zh-CN';
+$('langSelect').value=lang;
+['autoUpdate','boot','telemetry','cloud','beta'].forEach(k=>{
+  const el=$('set'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.checked=!!S.settings[k];
+});
+applyI18n();
+renderProtect();
+renderLogs();
+$('pageTitle').dataset.key='nav.home';$('pageTitle').textContent=T('nav.home');
+// $('pageSub').textContent=T('home.logs');
+$('compMsg').dataset.k='set.compIdle';
+window.addEventListener('beforeunload',()=>{if(scanTimer)clearInterval(scanTimer);if(repairTimer)clearInterval(repairTimer)});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if($('confirmModal').classList.contains('open'))closeConfirm(false);
+  else if($('customModal').classList.contains('open'))closeCustomPicker();
+  else if($('dbModal').classList.contains('open'))closeDBModal();
+});
+$('customPathInput').addEventListener('keydown',e=>{if(e.key==='Enter')addCustomPath()});
+</script>
+</body>
+</html>

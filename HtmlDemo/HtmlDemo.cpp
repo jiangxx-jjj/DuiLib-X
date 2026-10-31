@@ -19,188 +19,13 @@ using namespace DuiLib;
 #pragma comment(lib, "msimg32.lib")
 
 // ==========================================================================
-//  内嵌 HTML 页面（原始字符串字面量）
+//  HTML 页面：外部文件方式
 //
-//  说明：C++11 的 R"(...)" 语法让整段 HTML 保持原样，不需要转义引号、
-//  不需要每行加 _T()。宽字符版本写作 LR"(...)"，可直接赋给 LPCTSTR。
+//  HTML 内容较大（约 140KB），超过 MSVC 单字符串字面量 65535 字节的
+//  编译上限（C2026），因此放在外部文件 html_page.html 中，
+//  用 SetHtmlFromFile 加载（内容见 HtmlDemo\html_page.html，UTF-8）。
 // ==========================================================================
-static LPCTSTR kHtmlPage = LR"HTML(<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-/* ---------- 全局 ---------- */
-* { margin: 0; padding: 0; }
-body {
-    font-family: 微软雅黑;
-    font-size: 14px;
-    color: #2B3445;
-    background-color: #EEF2F7;
-}
 
-/* ---------- 标题栏（可拖动区域）---------- */
-.titlebar {
-    position: relative;
-    background: linear-gradient(180deg, #3A6BE8 0%, #2D5BD7 100%);
-    height: 52px;
-    border-radius: 10px 10px 0 0;
-}
-.titlebar .app-title {
-    position: absolute;
-    left: 20px;
-    top: 0;
-    color: #FFFFFF;
-    font-size: 16px;
-    font-weight: bold;
-    line-height: 52px;
-}
-.titlebar .app-sub {
-    position: absolute;
-    left: 110px;
-    top: 0;
-    color: #B8CBF5;
-    font-size: 12px;
-    line-height: 52px;
-}
-
-/* ---------- 右上角三个窗口按键 ---------- */
-.win-btn {
-    position: absolute;
-    top: 9px;
-    width: 46px;
-    height: 34px;
-    line-height: 34px;
-    text-align: center;
-    color: #E8EEFC;
-    font-size: 15px;
-    border-radius: 6px;
-}
-.win-btn:hover { background-color: #4E7BEC; }
-.win-btn.close:hover { background-color: #E5484D; color: #FFFFFF; }
-.win-min  { right: 150px; }
-.win-max  { right: 100px; }
-.win-close{ right: 50px; }
-
-/* ---------- 内容区 ---------- */
-.page { padding: 14px 16px; }
-
-.card {
-    background-color: #FFFFFF;
-    border: 1px solid #DCE3ED;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(45, 91, 215, 0.08);
-    padding: 16px 18px;
-    margin-bottom: 14px;
-}
-.card h3 {
-    color: #2D5BD7;
-    font-size: 15px;
-    font-weight: bold;
-    margin-bottom: 12px;
-}
-
-.row { margin: 10px 0; }
-label { color: #5A6478; margin-right: 14px; }
-
-/* ---------- 表单控件样式 ---------- */
-input[type=text], input[type=password] {
-    width: 260px; height: 32px;
-    border: 1px solid #C8CFDA; border-radius: 6px;
-    background-color: #FFFFFF;
-}
-select {
-    width: 180px; height: 32px;
-    border: 1px solid #C8CFDA; border-radius: 6px;
-    background-color: #FFFFFF;
-}
-input[type=checkbox], input[type=radio] { width: 16px; height: 16px; margin-right: 6px; }
-
-button {
-    width: 112px; height: 34px;
-    border: 1px solid #C8CFDA; border-radius: 6px;
-    background-color: #F3F6FB;
-    color: #2B3445;
-    margin-right: 10px;
-}
-button:hover { background-color: #E6EDF9; }
-
-/* ---------- 徽标/提示 ---------- */
-.badge {
-    display: inline-block;
-    background-color: #E7F7EE;
-    color: #1E9E5A;
-    border-radius: 10px;
-    padding: 2px 10px;
-    font-size: 12px;
-}
-a { color: #1E6FFF; text-decoration: underline; }
-.footer { text-align: center; color: #98A2B3; font-size: 12px; padding: 8px 0 14px 0; display: block; width: 100%; }
-</style>
-</head>
-<body>
-
-<!-- 标题栏：整条是拖动区，右侧三个 HTML 按钮 -->
-<div class="titlebar">
-    <span class="app-title">DuiLib-X</span>
-    <span class="app-sub">纯 HTML 界面 · 无浏览器内核</span>
-    <div class="win-btn win-min" name="win_min">—</div>
-    <div class="win-btn win-max" name="win_max">□</div>
-    <div class="win-btn win-close close" name="win_close">✕</div>
-</div>
-
-<div class="page">
-
-    <!-- 卡片 1：登录表单 -->
-    <div class="card">
-        <h3>登录信息</h3>
-        <div class="row"><label>用户名：</label><input type="text" name="user" value="张三"/></div>
-        <div class="row"><label>密　码：</label><input type="password" name="pwd" value="123456"/></div>
-        <div class="row"><label>城　市：</label>
-            <select name="city">
-                <option>北京</option>
-                <option selected>上海</option>
-                <option>深圳</option>
-                <option>广州</option>
-            </select>
-        </div>
-        <div class="row">
-            <input type="checkbox" name="remember" checked/><span style="padding-left:8px;">记住密码</span>
-            <input type="radio" name="sex" value="m" checked/><span style="padding-left:8px;">男</span>
-            <input type="radio" name="sex" value="f"/><span style="padding-left:8px;">女</span>
-        </div>
-    </div>
-
-    <!-- 卡片 2：CSS3 效果展示 -->
-    <div class="card">
-        <h3>CSS3 效果</h3>
-        <div class="row">
-            <span class="badge">border-radius 圆角</span>
-            <span class="badge">linear-gradient 渐变</span>
-            <span class="badge">box-shadow 阴影</span>
-        </div>
-        <p style="margin-top:10px; color:#5A6478;">
-            这些效果全部由自研引擎解析 CSS，DuiLib 用 GDI+ 绘制，没有浏览器内核。
-        </p>
-    </div>
-
-    <!-- 卡片 3：操作按钮 -->
-    <div class="card">
-        <h3>操作</h3>
-        <button name="do_login">登 录</button>
-        <button name="do_reset">重 置</button>
-        <p style="margin-top:12px;">
-            更多信息请访问 <a href="https://github.com/jiangxx-jjj/DuiLib-X">DuiLib-X 项目主页</a>。
-        </p>
-    </div>
-
-    <div style="text-align:center; color:#98A2B3; font-size:12px; padding:8px 0 14px 0;">
-        DuiLib-X · 自研 HTML/CSS 引擎 · DuiLib 原生渲染 · 无浏览器内核
-    </div>
-</div>
-
-</body>
-</html>
-)HTML";
 
 
 // ==========================================================================
@@ -327,7 +152,7 @@ private:
         pBox->SetBkColor(0xFFEEF2F7);
         pBox->SetManager(m_pm, NULL, true);
         m_pm->AttachDialog(pBox);
-        pBox->SetHtml(kHtmlPage);
+    pBox->SetHtmlFromFile(_T("html_page.html"));
         m_pm->AddNotifier(this);
         return 0;
     }

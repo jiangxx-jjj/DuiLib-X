@@ -958,6 +958,42 @@ static LPCTSTR kHtmlPage = LR"HTML(<!DOCTYPE html>
 注意：原始字符串的结束标记是 `)HTML"`，`HTML` 是自定义分隔符，可换成任意标识符
 （如 `)PAGE"`）以避免和 HTML 内容里的 `)"` 冲突。
 
+#### ⚠️ 大 HTML 必须用外部文件（MSVC 字符串 65535 字节上限）
+
+MSVC 对**单个字符串字面量**有 **65535 字节**的硬性上限（C2026 错误：
+"字符串太大，已截断尾部字符"）。中文 HTML 按 UTF-8 每字 3 字节计算，
+约 **2 万多字的页面**就会触顶，报错行号还会落在字符串中段，非常难排查。
+
+```text
+HtmlDemo.cpp(156,1): error C2026: 字符串太大，已截断尾部字符
+```
+
+**三种方案对比**：
+
+| 方案 | 是否可行 | 说明 |
+|---|---|---|
+| 拆成多个 `LR"..."` 相邻拼接 | ❌ | 拼接发生在**编译期**，展开后仍是一个超限字符串 |
+| 拆成多个 `#include` 段文件 | ❌ | `#include` 预处理后同样拼成一个字符串，仍超限 |
+| 拆成多个独立变量运行时拼接 | ✅ 但啰嗦 | 每段一个变量，`std::wstring` 相加 |
+| **外部文件 `SetHtmlFromFile`** | ✅ **推荐** | 无大小限制，美工可直接改 HTML，程序与界面彻底分离 |
+
+**推荐做法**（超过 60KB 就换外部文件）：
+
+```cpp
+// html_page.html 放在 exe 目录（或 ResourcePath）下，UTF-8 编码
+pBox->SetHtmlFromFile(_T("html_page.html"));
+```
+
+XML 写法等价：
+
+```xml
+<HtmlBox html="html_page.html" />
+```
+
+`SetHtmlFromFile` 内部自动识别 UTF-8/UTF-16 BOM，相对路径基于
+`CPaintManagerUI::GetResourcePath()`。本仓库的 `HtmlDemo` 就是这么做的
+（页面内容见 `HtmlDemo/html_page.html`）。
+
 ### 14.5 支持的 HTML 标签
 
 | 类别 | 标签 |
@@ -972,7 +1008,15 @@ static LPCTSTR kHtmlPage = LR"HTML(<!DOCTYPE html>
 | 媒体 | `img`（本地图片，支持 DuiLib zip 资源包） |
 | 其它 | `br` `wbr` `progress` `meter` `output` `dialog` |
 
-**不支持**：`canvas` `video` `audio` `iframe` `svg`（这些需要真正的图形/媒体引擎）。
+**标签支持补充**（litehtml 版引擎）：
+
+| 标签 | 支持方式 |
+|---|---|
+| `canvas` | ✅ GDI+ 内存位图 + JS 绘图 API（`canvas_clear/fill_rect/draw_rect/draw_line/draw_circle/draw_text`） |
+| `audio` | ✅ Win32 MCI 播放本地 mp3/wav，自绘播放/暂停按钮 + 进度条 |
+| `iframe` | ✅ 内嵌本地 HTML 子文档渲染 |
+| `svg` | ✅ rect/circle/line/text 基本形状递归渲染 |
+| `video` / `embed` / `object` | 降级占位（灰底虚线框，不崩不乱版） |
 
 ### 14.6 支持的 CSS3 属性
 
