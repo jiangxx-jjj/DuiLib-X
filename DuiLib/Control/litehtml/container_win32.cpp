@@ -158,6 +158,7 @@ void container_win32::draw_text(litehtml::uint_ptr hdc, const char* text, liteht
     if (!m_hdc || !text || !text[0]) return;
     auto it = m_fontById.find(hFont);
     if (it == m_fontById.end()) return;
+    if (!it->second.pFont) return;   // 字体指针判空，防崩溃
 
     std::wstring wText;
     int n = ::MultiByteToWideChar(CP_UTF8, 0, text, -1, NULL, 0);
@@ -234,6 +235,10 @@ void container_win32::draw_background(litehtml::uint_ptr hdc,
     const std::vector<litehtml::background_paint>& bg)
 {
     if (!m_hdc || bg.empty()) return;
+    if (hdc != (litehtml::uint_ptr)m_hdc) {
+        // litehtml 传入的 hdc 与 SetOutput 设置的不一致时，切换绘制目标
+        m_hdc = (HDC)hdc;
+    }
 
     for (size_t i = 0; i < bg.size(); i++) {
         const litehtml::background_paint& b = bg[i];
