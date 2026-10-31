@@ -655,6 +655,17 @@ litehtml::element::ptr container_win32::create_element(const char* tag_name,
     if (_stricmp(tag_name, "button") == 0)  return std::make_shared<litehtml::el_button>(doc, this);
     if (_stricmp(tag_name, "textarea") == 0) return std::make_shared<litehtml::el_textarea>(doc, this);
 
+    // ---- 媒体标签降级占位 ----
+    // video：按用户要求完全跳过（返回 nullptr 走默认 html_tag，再由 UA 样式隐藏不了，
+    // 所以给个固定占位尺寸让其不乱版即可）
+    if (_stricmp(tag_name, "audio") == 0 || _stricmp(tag_name, "canvas") == 0 ||
+        _stricmp(tag_name, "iframe") == 0 || _stricmp(tag_name, "svg") == 0 ||
+        _stricmp(tag_name, "embed") == 0 || _stricmp(tag_name, "object") == 0)
+    {
+        // 用一个占位元素：灰色块 + 提示文字，保证不崩、不乱版
+        return std::make_shared<litehtml::el_media_placeholder>(doc, this, tag_name);
+    }
+
     // 其它标签用 litehtml 默认实现
     return nullptr;
 }

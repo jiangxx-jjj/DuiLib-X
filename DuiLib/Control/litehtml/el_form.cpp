@@ -688,4 +688,62 @@ bool el_textarea::InputKeyDown(int vkCode)
     return false;
 }
 
+// ============================ 媒体标签占位 ============================
+
+el_media_placeholder::el_media_placeholder(const document::ptr& doc, container_win32* container,
+                                           const char* tag)
+    : el_form_control(doc, container, "inline-block")
+    , m_tagName(tag ? tag : "media")
+{
+}
+
+void el_media_placeholder::get_content_size(size& sz, int max_width)
+{
+    // 占位尺寸：取 width/height 属性（如有），否则 300x150（HTML5 标准媒体默认尺寸）
+    sz.width = 300;
+    sz.height = 150;
+}
+
+void el_media_placeholder::draw(uint_ptr hdc, int x, int y, const position* clip,
+    const std::shared_ptr<render_item>& ri)
+{
+    HDC dc = (HDC)hdc;
+    if (!dc) return;
+
+    position pos = GetDrawPos(x, y, ri);
+    if (!pos.does_intersect(clip)) return;
+
+    Gp::Graphics g(dc);
+    g.SetSmoothingMode(Gp::SmoothingModeAntiAlias);
+    g.SetTextRenderingHint(Gp::TextRenderingHintAntiAlias);
+
+    // 灰底 + 虚线边框占位
+    Gp::SolidBrush bgBrush(Gp::Color(255, 240, 240, 242));
+    g.FillRectangle(&bgBrush, (Gp::REAL)pos.x, (Gp::REAL)pos.y,
+                    (Gp::REAL)pos.width, (Gp::REAL)pos.height);
+
+    Gp::Pen borderPen(Gp::Color(255, 200, 202, 208), 1.0f);
+    borderPen.SetDashStyle(Gp::DashStyleDash);
+    g.DrawRectangle(&borderPen, (Gp::REAL)pos.x, (Gp::REAL)pos.y,
+                    (Gp::REAL)(pos.width - 1), (Gp::REAL)(pos.height - 1));
+
+    // 提示文字：<tag> 不支持
+    std::string hint = "<" + m_tagName + "> not supported";
+    Gp::Font* pFont = GetGpFontOf(this, m_container);
+    if (pFont) {
+        Gp::SolidBrush txtBrush(Gp::Color(255, 140, 142, 150));
+        std::wstring wHint;
+        int n = ::MultiByteToWideChar(CP_UTF8, 0, hint.c_str(), (int)hint.size(), NULL, 0);
+        if (n > 0) {
+            wHint.resize(n);
+            ::MultiByteToWideChar(CP_UTF8, 0, hint.c_str(), (int)hint.size(), &wHint[0], n);
+        }
+        Gp::RectF rc((Gp::REAL)pos.x, (Gp::REAL)pos.y, (Gp::REAL)pos.width, (Gp::REAL)pos.height);
+        Gp::StringFormat fmt;
+        fmt.SetAlignment(Gp::StringAlignmentCenter);
+        fmt.SetLineAlignment(Gp::StringAlignmentCenter);
+        g.DrawString(wHint.c_str(), (INT)wHint.size(), pFont, rc, &fmt, &txtBrush);
+    }
+}
+
 } // namespace litehtml

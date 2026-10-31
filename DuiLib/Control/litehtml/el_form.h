@@ -180,6 +180,23 @@ protected:
     size_t m_caretPos;
 };
 
+// ============================ 媒体标签占位 ============================
+// audio/canvas/iframe/svg/embed/object 的降级占位：灰块 + 提示文字
+
+class el_media_placeholder : public el_form_control
+{
+public:
+    el_media_placeholder(const document::ptr& doc, container_win32* container, const char* tag);
+
+    bool    is_replaced() const override { return true; }
+    void    draw(uint_ptr hdc, int x, int y, const position* clip,
+                 const std::shared_ptr<render_item>& ri) override;
+    void    get_content_size(size& sz, int max_width) override;
+
+protected:
+    std::string m_tagName;
+};
+
 } // namespace litehtml
 
 #endif // LH_EL_FORM_H
