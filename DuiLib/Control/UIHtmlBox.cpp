@@ -71,6 +71,30 @@ CHtmlBoxUI::CHtmlBoxUI(void)
             ::DeleteDC(hMemDC);
             return true;
         });
+
+    // 交互回调
+    m_container->SetInteractCallbacks(
+        [this](const std::string& href) {
+            if (m_pManager != NULL) {
+                m_sNotifyName = Utf8ToDuiW(href);
+                m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLLINK,
+                                       (WPARAM)m_sNotifyName.GetData(), 0, true);
+            }
+        },
+        [this](const std::string& name) {
+            if (m_pManager != NULL) {
+                m_sNotifyName = Utf8ToDuiW(name);
+                m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLFORMSUBMIT,
+                                       (WPARAM)m_sNotifyName.GetData(), 0, true);
+            }
+        },
+        [this](const std::string& name) {
+            if (m_pManager != NULL) {
+                m_sNotifyName = Utf8ToDuiW(name);
+                m_pManager->SendNotify(this, DUI_MSGTYPE_HTMLCHANGED,
+                                       (WPARAM)m_sNotifyName.GetData(), 0, true);
+            }
+        });
 }
 
 CHtmlBoxUI::~CHtmlBoxUI(void)
@@ -324,10 +348,30 @@ void CHtmlBoxUI::DoEvent(TEventUI& event)
         Invalidate();
     }
     else if (event.Type == UIEVENT_CHAR) {
-        // TODO: litehtml 版键盘输入
+        if (m_container && m_container->InputChar(event.chKey)) {
+            Invalidate();
+        }
     }
     else if (event.Type == UIEVENT_KEYDOWN) {
-        // TODO: litehtml 版键盘导航
+        if (m_container && m_container->InputKeyDown((int)event.wParam)) {
+            Invalidate();
+        }
+    }
+    else if (event.Type == UIEVENT_SETCURSOR) {
+        // 根据 litehtml 的光标设置鼠标光标
+        if (m_container) {
+            const std::string& cursor = m_container->GetCursor();
+            if (cursor == "pointer" || cursor == "hand") {
+                ::SetCursor(::LoadCursor(NULL, MAKEINTRESOURCE(IDC_HAND)));
+                return;
+            }
+            if (cursor == "text") {
+                ::SetCursor(::LoadCursor(NULL, MAKEINTRESOURCE(IDC_IBEAM)));
+                return;
+            }
+        }
+        ::SetCursor(::LoadCursor(NULL, MAKEINTRESOURCE(IDC_ARROW)));
+        return;
     }
     else if (event.Type == UIEVENT_SCROLLWHEEL) {
         int delta = ((int)event.wParam > 0) ? -60 : 60;

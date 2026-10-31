@@ -43,6 +43,24 @@ public:
     void SetImageCallbacks(FnImageSize fnSize, FnImageDraw fnDraw)
     { m_fnImageSize = fnSize; m_fnImageDraw = fnDraw; }
 
+    // ---- 交互回调（由 DuiLib 注入，用于通知到 C++）----
+    typedef std::function<void(const std::string& href)> FnLinkClick;
+    typedef std::function<void(const std::string& name)> FnButtonClick;
+    typedef std::function<void(const std::string& name)> FnValueChanged;
+    void SetInteractCallbacks(FnLinkClick fnLink, FnButtonClick fnBtn, FnValueChanged fnVal)
+    { m_fnLinkClick = fnLink; m_fnButtonClick = fnBtn; m_fnValueChanged = fnVal; }
+
+    // ---- 键盘输入（转发给当前焦点表单控件）----
+    bool InputChar(wchar_t ch);
+    bool InputKeyDown(int vkCode);
+
+    // ---- 光标查询 ----
+    const std::string& GetCursor() const { return m_cursor; }
+
+    // ---- 焦点元素 ----
+    void SetFocusElement(litehtml::element::ptr el) { m_focusElement = el; }
+    litehtml::element::ptr GetFocusElement() const { return m_focusElement; }
+
     // ---- document_container 接口 ----
     litehtml::uint_ptr create_font(const char* faceName, int size, int weight,
         litehtml::font_style italic, unsigned int decoration, litehtml::font_metrics* fm) override;
@@ -101,6 +119,14 @@ protected:
     // 图片回调
     FnImageSize m_fnImageSize;
     FnImageDraw m_fnImageDraw;
+
+    // 交互回调
+    std::function<void(const std::string& href)> m_fnLinkClick;
+    std::function<void(const std::string& name)> m_fnButtonClick;
+    std::function<void(const std::string& name)> m_fnValueChanged;
+
+    // 当前焦点表单元素
+    litehtml::element::ptr m_focusElement;
 
     // 当前光标
     std::string m_cursor;

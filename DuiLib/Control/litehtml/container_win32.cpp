@@ -631,7 +631,9 @@ litehtml::element::ptr container_win32::create_element(const char* tag_name,
     const litehtml::string_map& attributes,
     const std::shared_ptr<litehtml::document>& doc)
 {
-    // 返回 NULL 让 litehtml 用默认实现
+    // 阶段 3：表单控件暂时用 litehtml 默认实现（占位）
+    // 阶段 4 会统一用 CSS Grid 布局后，再实现完整的表单自绘
+    // 目前先保证链接点击和光标切换可用
     return nullptr;
 }
 
@@ -645,7 +647,10 @@ void container_win32::set_caption(const char* caption) {}
 void container_win32::set_base_url(const char* base_url) { if (base_url) m_basePath = base_url; }
 void container_win32::link(const std::shared_ptr<litehtml::document>& doc,
     const litehtml::element::ptr& el) {}
-void container_win32::on_anchor_click(const char* url, const litehtml::element::ptr& el) {}
+void container_win32::on_anchor_click(const char* url, const litehtml::element::ptr& el)
+{
+    if (m_fnLinkClick && url) m_fnLinkClick(url);
+}
 void container_win32::set_cursor(const char* cursor) { if (cursor) m_cursor = cursor; }
 
 void container_win32::transform_text(litehtml::string& text, litehtml::text_transform tt)
@@ -677,4 +682,18 @@ void container_win32::get_language(litehtml::string& language, litehtml::string&
 {
     language = "zh";
     culture = "CN";
+}
+
+// ============================ 键盘输入 ============================
+
+bool container_win32::InputChar(wchar_t ch)
+{
+    // 阶段 3：表单控件待阶段 4 统一实现
+    return false;
+}
+
+bool container_win32::InputKeyDown(int vkCode)
+{
+    // 阶段 3：表单控件待阶段 4 统一实现
+    return false;
 }
