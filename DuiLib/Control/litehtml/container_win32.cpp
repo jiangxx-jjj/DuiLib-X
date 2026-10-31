@@ -252,12 +252,10 @@ void container_win32::draw_background(litehtml::uint_ptr hdc,
         // 渐变背景（linear-gradient 等）
         if (!b.image.empty() && b.image.find("gradient") != std::string::npos) {
             // litehtml 把 gradient 作为 image 传入，格式如 "linear-gradient(...)"
-            // 我们需要解析并绘制渐变
-            // TODO: 阶段 2 实现渐变解析
+            DrawGradient(g, path, b.image, x, y, w, h);
         }
-
         // 背景图片
-        if (!b.image.empty() && m_fnImageDraw) {
+        else if (!b.image.empty() && m_fnImageDraw) {
             std::string src = b.image;
             // 去掉 url() 包装
             if (src.find("url(") == 0) {
@@ -277,6 +275,229 @@ void container_win32::draw_background(litehtml::uint_ptr hdc,
             g.FillPath(&brush, &path);
         }
     }
+}
+
+// 解析并绘制渐变（linear-gradient / radial-gradient）
+void container_win32::DrawGradient(Gp::Graphics& g, Gp::GraphicsPath& path,
+    const std::string& gradientStr, int x, int y, int w, int h)
+{
+    // 格式：linear-gradient(180deg, #3A6BE8 0%, #2D5BD7 100%)
+    // 或：radial-gradient(circle, #FFF 0%, #E0E6F0 100%)
+
+    bool bRadial = gradientStr.find("radial-gradient") != std::string::npos;
+    size_t p1 = gradientStr.find('(');
+    size_t p2 = gradientStr.rfind(')');
+    if (p1 == std::string::npos || p2 <= p1) return;
+
+    std::string inner = gradientStr.substr(p1 + 1, p2 - p1 - 1);
+    std::vector<std::string> parts = SplitTopLevel(inner, ',');
+
+    // 解析角度（linear-gradient 的第一段可能是角度）
+    float angle = 180.0f;   // 默认从上到下
+    size_t startIdx = 0;
+    if (!parts.empty() && !bRadial) {
+        std::string first = ToLower(Trim(parts[0]));
+        if (first.find("deg") != std::string::npos) {
+            angle = (float)atof(first.c_str());
+            startIdx = 1;
+        } else if (first.find("to ") != std::string::npos) {
+            if (first.find("right") != std::string::npos) angle = 90.0f;
+            else if (first.find("left") != std::string::npos) angle = 270.0f;
+            else if (first.find("top") != std::string::npos) angle = 0.0f;
+            else angle = 180.0f;
+            // 组合方向
+            if (first.find("right") != std::string::npos && first.find("bottom") != std::string::npos) angle = 135.0f;
+            if (first.find("left") != std::string::npos && first.find("bottom") != std::string::npos) angle = 225.0f;
+            startIdx = 1;
+        }
+    }
+
+    // 解析色标
+    std::vector<Gp::Color> colors;
+    std::vector<float> positions;
+    for (size_t i = startIdx; i < parts.size(); i++) {
+        std::string token = Trim(parts[i]);
+        if (token.empty()) continue;
+
+        // 找百分比位置
+        float pos = (float)(i - startIdx) / (float)(parts.size() - startIdx - 1);
+        size_t pct = token.find('%');
+        std::string colorPart = token;
+        if (pct != std::string::npos) {
+            size_t numStart = pct;
+            while (numStart > 0 && (isdigit((unsigned char)token[numStart - 1]) ||
+                                    token[numStart - 1] == '.' || token[numStart - 1] == '-')) {
+                numStart--;
+            }
+            pos = (float)atof(token.substr(numStart, pct - numStart).c_str()) / 100.0f;
+            colorPart = Trim(token.substr(0, numStart));
+        }
+
+        Gp::Color c = ParseColor(colorPart);
+        colors.push_back(c);
+        positions.push_back(pos);
+    }
+
+    if (colors.size() < 2) return;
+
+    // 绘制渐变
+    if (bRadial) {
+        // 径向渐变
+        float cx = x + w / 2.0f;
+        float cy = y + h / 2.0f;
+        float maxR = (w > h ? w : h) / 2.0f;
+        Gp::GraphicsPath circlePath;
+        circlePath.AddEllipse(cx - maxR, cy - maxR, maxR * 2, maxR * 2);
+        Gp::PathGradientBrush pgb(&circlePath);
+        pgb.SetCenterPoint(Gp::PointF(cx, cy));
+        pgb.SetCenterColor(colors[0]);
+        if (colors.size() > 1) {
+            std::vector<Gp::Color> surround(colors.begin() + 1, colors.end());
+            int count = (int)surround.size();
+            pgb.SetSurroundColors(&surround[0], &count);
+        }
+        g.SetClip(&path, Gp::CombineModeIntersect);
+        g.FillEllipse(&pgb, cx - maxR, cy - maxR, maxR * 2, maxR * 2);
+        g.ResetClip();
+    } else {
+        // 线性渐变：按角度计算起点/终点
+        float rad = angle * 3.14159265f / 180.0f;
+        float dx = cosf(rad);
+        float dy = sinf(rad);
+        float cx = x + w / 2.0f;
+        float cy = y + h / 2.0f;
+        float halfLen = (fabsf(dx) * w + fabsf(dy) * h) / 2.0f;
+        Gp::PointF p1(cx - dx * halfLen, cy - dy * halfLen);
+        Gp::PointF p2(cx + dx * halfLen, cy + dy * halfLen);
+        Gp::LinearGradientBrush lgb(p1, p2, colors[0], colors[colors.size() - 1]);
+        if (colors.size() > 2) {
+            lgb.SetInterpolationColors(&colors[0], &positions[0], (INT)colors.size());
+        }
+        g.FillPath(&lgb, &path);
+    }
+}
+
+// 解析 CSS 颜色（#RGB / #RRGGBB / #RRGGBBAA / rgb() / rgba() / 颜色名）
+Gp::Color container_win32::ParseColor(const std::string& str)
+{
+    std::string s = ToLower(Trim(str));
+    if (s.empty()) return Gp::Color(255, 0, 0, 0);
+
+    // #RGB
+    if (s[0] == '#' && s.size() == 4) {
+        int r = HexCharToInt(s[1]) * 17;
+        int g = HexCharToInt(s[2]) * 17;
+        int b = HexCharToInt(s[3]) * 17;
+        return Gp::Color(255, r, g, b);
+    }
+    // #RRGGBB
+    if (s[0] == '#' && s.size() == 7) {
+        int r = HexCharToInt(s[1]) * 16 + HexCharToInt(s[2]);
+        int g = HexCharToInt(s[3]) * 16 + HexCharToInt(s[4]);
+        int b = HexCharToInt(s[5]) * 16 + HexCharToInt(s[6]);
+        return Gp::Color(255, r, g, b);
+    }
+    // #RRGGBBAA
+    if (s[0] == '#' && s.size() == 9) {
+        int r = HexCharToInt(s[1]) * 16 + HexCharToInt(s[2]);
+        int g = HexCharToInt(s[3]) * 16 + HexCharToInt(s[4]);
+        int b = HexCharToInt(s[5]) * 16 + HexCharToInt(s[6]);
+        int a = HexCharToInt(s[7]) * 16 + HexCharToInt(s[8]);
+        return Gp::Color(a, r, g, b);
+    }
+    // rgb(r, g, b)
+    if (s.find("rgb(") == 0) {
+        size_t p1 = s.find('('), p2 = s.rfind(')');
+        if (p1 != std::string::npos && p2 > p1) {
+            std::string inner = s.substr(p1 + 1, p2 - p1 - 1);
+            std::vector<std::string> parts = SplitTopLevel(inner, ',');
+            if (parts.size() >= 3) {
+                int r = atoi(Trim(parts[0]).c_str());
+                int g = atoi(Trim(parts[1]).c_str());
+                int b = atoi(Trim(parts[2]).c_str());
+                return Gp::Color(255, r, g, b);
+            }
+        }
+    }
+    // rgba(r, g, b, a)
+    if (s.find("rgba(") == 0) {
+        size_t p1 = s.find('('), p2 = s.rfind(')');
+        if (p1 != std::string::npos && p2 > p1) {
+            std::string inner = s.substr(p1 + 1, p2 - p1 - 1);
+            std::vector<std::string> parts = SplitTopLevel(inner, ',');
+            if (parts.size() >= 4) {
+                int r = atoi(Trim(parts[0]).c_str());
+                int g = atoi(Trim(parts[1]).c_str());
+                int b = atoi(Trim(parts[2]).c_str());
+                float a = (float)atof(Trim(parts[3]).c_str());
+                return Gp::Color((int)(a * 255), r, g, b);
+            }
+        }
+    }
+
+    // 颜色名（常用）
+    static std::map<std::string, Gp::Color> colorMap = {
+        {"red", Gp::Color(255, 255, 0, 0)}, {"green", Gp::Color(255, 0, 128, 0)},
+        {"blue", Gp::Color(255, 0, 0, 255)}, {"white", Gp::Color(255, 255, 255, 255)},
+        {"black", Gp::Color(255, 0, 0, 0)}, {"yellow", Gp::Color(255, 255, 255, 0)},
+        {"gray", Gp::Color(255, 128, 128, 128)}, {"grey", Gp::Color(255, 128, 128, 128)},
+        {"orange", Gp::Color(255, 255, 165, 0)}, {"purple", Gp::Color(255, 128, 0, 128)},
+        {"pink", Gp::Color(255, 255, 192, 203)}, {"brown", Gp::Color(255, 165, 42, 42)},
+        {"cyan", Gp::Color(255, 0, 255, 255)}, {"magenta", Gp::Color(255, 255, 0, 255)},
+        {"transparent", Gp::Color(0, 0, 0, 0)},
+    };
+    auto it = colorMap.find(s);
+    if (it != colorMap.end()) return it->second;
+
+    return Gp::Color(255, 0, 0, 0);
+}
+
+// 按分隔符切分，跳过括号内的分隔符（用于 linear-gradient(a, b) 这类）
+std::vector<std::string> container_win32::SplitTopLevel(const std::string& s, char sep)
+{
+    std::vector<std::string> out;
+    std::string cur;
+    int depth = 0;
+    for (size_t i = 0; i < s.size(); i++) {
+        char ch = s[i];
+        if (ch == '(') depth++;
+        else if (ch == ')') depth--;
+        if (ch == sep && depth == 0) {
+            if (!cur.empty()) { out.push_back(cur); cur.clear(); }
+        } else {
+            cur += ch;
+        }
+    }
+    if (!cur.empty()) out.push_back(cur);
+    return out;
+}
+
+// 十六进制字符转整数
+int container_win32::HexCharToInt(char c)
+{
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return 0;
+}
+
+// 字符串小写
+std::string container_win32::ToLower(const std::string& s)
+{
+    std::string out = s;
+    for (size_t i = 0; i < out.size(); i++) {
+        if (out[i] >= 'A' && out[i] <= 'Z') out[i] += 32;
+    }
+    return out;
+}
+
+// 去除首尾空白
+std::string container_win32::Trim(const std::string& s)
+{
+    size_t start = 0, end = s.size();
+    while (start < end && isspace((unsigned char)s[start])) start++;
+    while (end > start && isspace((unsigned char)s[end - 1])) end--;
+    return s.substr(start, end - start);
 }
 
 void container_win32::draw_borders(litehtml::uint_ptr hdc, const litehtml::borders& borders,

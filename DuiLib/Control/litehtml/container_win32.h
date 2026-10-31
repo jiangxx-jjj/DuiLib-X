@@ -117,6 +117,23 @@ protected:
     // 工具：构建圆角路径
     static void BuildRoundRectPath(Gp::GraphicsPath& path, int x, int y, int w, int h,
         const litehtml::border_radiuses& br);
+
+    // 工具：绘制渐变
+    void DrawGradient(Gp::Graphics& g, Gp::GraphicsPath& path,
+        const std::string& gradientStr, int x, int y, int w, int h);
+
+    // 工具：解析 CSS 颜色
+    static Gp::Color ParseColor(const std::string& str);
+
+    // 工具：按分隔符切分，跳过括号内
+    static std::vector<std::string> SplitTopLevel(const std::string& s, char sep);
+
+    // 工具：十六进制字符转整数
+    static int HexCharToInt(char c);
+
+    // 工具：字符串小写/去空白
+    static std::string ToLower(const std::string& s);
+    static std::string Trim(const std::string& s);
 };
 
 #endif // LH_CONTAINER_WIN32_H
